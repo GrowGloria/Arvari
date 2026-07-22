@@ -1,0 +1,32 @@
+{
+  "name": "arvari-wiki",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "art": "node scripts/generate-art-manifest.mjs",
+    "art:optimize": "node scripts/optimize-art.mjs && npm run art",
+    "predev": "npm run art",
+    "dev": "vite",
+    "prebuild": "npm run art",
+    "build": "vite build",
+    "lint": "oxlint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "oxlint": "^1.71.0",
+    "sharp": "^0.35.3",
+    "vite": "^8.1.1",
+    "vitest": "^4.1.10"
+  }
+}

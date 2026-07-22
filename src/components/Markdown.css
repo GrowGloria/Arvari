@@ -1,0 +1,142 @@
+.md {
+  font-size: 17px;
+  line-height: 1.75;
+  color: #3a2a18;
+}
+
+.md p {
+  margin: 0 0 18px;
+}
+
+.md h1,
+.md h2,
+.md h3,
+.md h4,
+.md h5,
+.md h6 {
+  font-family: var(--font-heading);
+  color: var(--color-heading);
+  scroll-margin-top: 90px;
+  line-height: 1.3;
+}
+
+.md h1 {
+  font-size: 30px;
+  margin: 40px 0 16px;
+}
+
+.md h2 {
+  font-size: 24px;
+  margin: 40px 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.md h3 {
+  font-size: 18px;
+  color: var(--color-text-secondary-2);
+  margin: 26px 0 10px;
+}
+
+.md h4,
+.md h5,
+.md h6 {
+  font-size: 15px;
+  color: var(--color-text-secondary-2);
+  margin: 20px 0 8px;
+  letter-spacing: 0.5px;
+}
+
+.md > *:first-child {
+  margin-top: 0;
+}
+
+.md__list {
+  margin: 0 0 18px;
+  padding-left: 24px;
+}
+
+.md__list li {
+  margin-bottom: 7px;
+}
+
+.md__list .md__list {
+  margin: 7px 0 0;
+}
+
+.md blockquote {
+  margin: 0 0 20px;
+  padding: 10px 20px;
+  border-left: 4px solid var(--color-border-accent);
+  background: var(--color-surface);
+  border-radius: 0 6px 6px 0;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.md hr {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 32px 0;
+}
+
+.md__embed {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-hero);
+  margin: 8px 0 20px;
+  box-shadow: 0 4px 14px rgba(40, 24, 10, 0.15);
+  cursor: zoom-in;
+}
+
+/* Вложение из заметки, которого нет в архиве */
+.md__embed-missing {
+  display: block;
+  margin: 8px 0 20px;
+  padding: 14px 16px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-control);
+  background: rgba(122, 90, 52, 0.06);
+  color: var(--color-text-muted);
+  font-size: 14px;
+  font-style: italic;
+}
+
+.md__embed-missing code {
+  font-family: ui-monospace, monospace;
+  font-style: normal;
+  font-size: 13px;
+  color: var(--color-text-secondary-2);
+}
+
+.md__code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.9em;
+  background: rgba(122, 59, 38, 0.08);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+/* Вики-ссылки: существующая статья */
+.md__wikilink {
+  color: var(--color-primary);
+  border-bottom: 1px solid rgba(122, 59, 38, 0.35);
+}
+
+.md__wikilink:hover {
+  color: var(--color-primary-hover);
+  border-bottom-color: var(--color-primary-hover);
+}
+
+/* Вики-ссылка на несуществующую статью — приглушённый пунктир */
+.md__wikilink--missing {
+  color: #a86a55;
+  border-bottom: 1px dashed rgba(168, 106, 85, 0.6);
+  opacity: 0.85;
+}
+
+.md__wikilink--missing:hover {
+  color: var(--color-error);
+  border-bottom-color: var(--color-error);
+}

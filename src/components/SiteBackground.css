@@ -1,0 +1,35 @@
+/* Фон-арты живут под всем содержимым (отрицательный z-index рисуется
+   поверх фона body, но под элементами страницы). */
+.site-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: #241a10;
+  overflow: hidden;
+}
+
+.site-bg__layer {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transition: opacity 2.5s ease;
+  /* Приглушаем, чтобы арт читался как атмосферная текстура, а не спорил с текстом */
+  filter: saturate(0.9) brightness(0.85);
+  transform: scale(1.04);
+}
+
+/* Виньетка + тёплый тон, чтобы «лист» с контентом отделялся от полей */
+.site-bg__scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center, rgba(20, 12, 5, 0.1) 0%, rgba(20, 12, 5, 0.4) 100%),
+    linear-gradient(180deg, rgba(36, 26, 16, 0.16) 0%, rgba(20, 12, 5, 0.28) 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-bg__layer {
+    transition: none;
+  }
+}

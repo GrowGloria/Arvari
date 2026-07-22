@@ -1,0 +1,80 @@
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--color-surface);
+  border-bottom: 2px solid var(--color-border-accent);
+  box-shadow: var(--shadow-header);
+}
+
+.site-header__inner {
+  padding-top: 16px;
+  padding-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 36px;
+}
+
+.site-header__nav {
+  display: flex;
+  gap: 28px;
+  font-family: var(--font-heading);
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
+
+.site-header__link {
+  color: var(--color-text-secondary-2);
+  background: none;
+  border: none;
+  padding: 0 0 4px;
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.site-header__link:hover {
+  color: var(--color-primary-hover);
+}
+
+.site-header__link.active,
+.site-header__link--active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.site-header__spacer {
+  flex: 1;
+}
+
+@media (max-width: 720px) {
+  .site-header__inner {
+    flex-wrap: wrap;
+    gap: 12px 18px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  .site-header__nav {
+    order: 3;
+    flex-basis: 100%;
+    flex-wrap: wrap;
+    gap: 16px 20px;
+    font-size: 13px;
+  }
+
+  .searchbar--compact {
+    order: 4;
+    flex-basis: 100%;
+  }
+
+  .site-header__spacer {
+    display: none;
+  }
+
+  /* «⚜ Мастер Арвари» + Выйти в редакторе — рядом с логотипом в первом ряду */
+  .editor-header-user {
+    margin-left: auto;
+  }
+}

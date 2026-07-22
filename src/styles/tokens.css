@@ -1,0 +1,89 @@
+:root {
+  /* Фон */
+  --color-bg-page: #e8dab8;
+  --color-bg-gradient-start: #f3e8cf;
+  --color-bg-gradient-mid: #e8dab8;
+  --color-bg-gradient-end: #ddc99e;
+  --color-surface: #f6ecd4;
+  --color-input-bg: #fbf5e6;
+
+  /* Рамки и разделители */
+  --color-border: #cbaf7d;
+  --color-border-accent: #b4894c;
+  --color-divider: #e2d0a5;
+
+  /* Текст */
+  --color-text: #2b1e12;
+  --color-heading: #3a2414;
+  --color-text-secondary: #48311a;
+  --color-text-secondary-2: #3f2c17;
+  --color-text-muted: #64461f;
+  --color-text-muted-2: #6e4f24;
+  --color-text-muted-3: #7d5c2e;
+
+  /* Светлые приглушённые тона — для тёмных поверхностей */
+  --color-muted-on-dark: #9a7c50;
+
+  /* Акценты */
+  --color-primary: #7a3b26;
+  --color-primary-hover: #b4894c;
+
+  /* Тёмные поверхности */
+  --color-dark-surface: #3a2414;
+  --color-dark-text: #c9b485;
+  --color-dark-text-2: #e8dab8;
+  --color-gold: #e8c98a;
+  --color-gold-2: #d9b878;
+
+  /* Статусы */
+  --color-error: #8a3b32;
+  --color-success: #3a6b46;
+
+  /* Градиенты-заглушки обложек */
+  --grad-1: linear-gradient(135deg, #8a5a2b, #c99a54);
+  --grad-2: linear-gradient(135deg, #3a4a3d, #6b8a72);
+  --grad-3: linear-gradient(135deg, #5c2f3a, #a05c6b);
+  --grad-4: linear-gradient(135deg, #2f3a4a, #5c748a);
+  --grad-5: linear-gradient(135deg, #4a3a20, #8a6a3a);
+  --grad-6: linear-gradient(135deg, #3a2f4a, #725c8a);
+
+  /* Типографика */
+  --font-heading: 'Cinzel', serif;
+  --font-body: 'EB Garamond', serif;
+
+  /* Форма */
+  --radius-card: 10px;
+  --radius-hero: 12px;
+  --radius-control: 6px;
+  --radius-control-sm: 5px;
+  --radius-badge: 4px;
+
+  /* Сетка */
+  --container-width: 1240px;
+  --container-padding: 32px;
+  --gap-card: 22px;
+  --gap-columns: 48px;
+
+  /* Тени */
+  --shadow-card: 0 3px 10px rgba(60, 40, 10, 0.1);
+  --shadow-header: 0 2px 10px rgba(60, 40, 10, 0.12);
+  --shadow-hero-search: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-dark-card: 0 4px 16px rgba(40, 24, 10, 0.25);
+  --shadow-modal: 0 10px 30px rgba(60, 40, 10, 0.15);
+}
+
+/* Хронология — тёмная тема, отдельный набор токенов */
+.chronology-page {
+  --chrono-bg: #14100a;
+  --chrono-text: #f6ecd4;
+  --chrono-text-secondary: #d9c8a8;
+  --chrono-gold: #d9b878;
+  --chrono-header-bg: rgba(20, 12, 5, 0.72);
+  --chrono-line: rgba(217, 184, 120, 0.35);
+  --chrono-accent-1: #a8a8b0;
+  --chrono-accent-2: #d9a05c;
+  --chrono-accent-3: #e07a6a;
+  --chrono-accent-4: #a88ae0;
+  --chrono-accent-5: #6ac99a;
+  --chrono-accent-6: #e8a83c;
+}

@@ -1,0 +1,108 @@
+@import './tokens.css';
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--color-bg-page);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::selection {
+  background: var(--color-border-accent);
+  color: var(--color-text);
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--color-primary-hover);
+}
+
+button {
+  font-family: inherit;
+}
+
+input,
+textarea,
+select {
+  font-family: var(--font-body);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--color-border-accent);
+}
+
+.container {
+  max-width: var(--container-width);
+  margin: 0 auto;
+  padding-left: var(--container-padding);
+  padding-right: var(--container-padding);
+}
+
+/*
+ * Каркас страницы: шапка сверху, подвал прижат ко дну экрана. Без этого на
+ * коротких статьях подвал всплывал к середине, а ниже зияла пустота.
+ */
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Растягиваем середину: лист на страницах с рамкой, main — на главной */
+.page-sheet,
+.page > main {
+  flex: 1;
+}
+
+/*
+ * «Лист» — рабочая зона поверх фоновых артов. Шапка и подвал остаются
+ * во всю ширину, а контент между ними ложится на пергамент, оставляя
+ * поля слева и справа, сквозь которые виден мир.
+ */
+.page-sheet {
+  position: relative;
+  width: 100%;
+  max-width: calc(var(--container-width) + var(--container-padding) * 2);
+  margin: 0 auto;
+  background: var(--color-bg-page);
+  border-left: 1px solid rgba(122, 90, 52, 0.35);
+  border-right: 1px solid rgba(122, 90, 52, 0.35);
+  box-shadow: 0 0 40px rgba(20, 12, 5, 0.45);
+}
+
+/* На узких экранах полей нет — лист занимает всю ширину */
+@media (max-width: 1340px) {
+  .page-sheet {
+    border-left: none;
+    border-right: none;
+    box-shadow: none;
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

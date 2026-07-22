@@ -1,0 +1,59 @@
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-text);
+}
+
+.logo--dark {
+  color: var(--chrono-text);
+}
+
+.logo__mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, #8a5a2b, #c99a54);
+  border: 2px solid #6b3f1c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: #f6ecd4;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.logo--dark .logo__mark {
+  width: 38px;
+  height: 38px;
+  font-size: 16px;
+}
+
+.logo__text {
+  line-height: 1.1;
+}
+
+.logo__title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 1px;
+}
+
+.logo--dark .logo__title {
+  font-size: 19px;
+}
+
+.logo__tagline {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.logo--dark .logo__tagline {
+  font-size: 10px;
+  color: #c9a86a;
+}
