@@ -35,6 +35,9 @@ export default function Header({ showSearch = false, searchPlaceholder, rightSlo
           >
             Случайная статья
           </button>
+          <NavLink to="/chronology" className="site-header__link">
+            Хронология
+          </NavLink>
           <NavLink to="/editor" className="site-header__link">
             Редактор ⚜
           </NavLink>

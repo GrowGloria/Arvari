@@ -17,3 +17,11 @@
   color: var(--color-text-muted-3);
   margin-top: 6px;
 }
+
+.site-footer__suggest {
+  display: inline-block;
+  margin-top: 14px;
+  font-family: var(--font-heading);
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
