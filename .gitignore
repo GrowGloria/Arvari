@@ -27,7 +27,8 @@ dist-ssr
 .claude/
 dev-server.cmd
 
-# Env files (keep .env.example tracked)
+# Env files (.env.example и .env.production — в git, локальные .env — нет)
 .env
 .env.*
 !.env.example
+!.env.production

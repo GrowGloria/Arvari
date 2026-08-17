@@ -73,18 +73,26 @@ app.Use(async (ctx, next) =>
     }
 });
 
-// Загруженные картинки отдаём как статику из папки uploads (см. uploadsDir выше).
+// Собранный фронтенд (wwwroot): сам сайт, его ассеты и арты в /uploads.
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+// Загруженные Мастером картинки — из папки данных, под префиксом /api/uploads.
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsDir),
-    RequestPath = "/uploads",
+    RequestPath = "/api/uploads",
 });
 
 var auth = app.Services.GetRequiredService<Auth>();
 IResult Deny() => Results.Json(new { message = "Доступ Мастера истёк — войдите заново." }, statusCode: 401);
 
+// Все ручки — под /api, чтобы не пересекаться с маршрутами сайта (/chronology
+// как страница vs /api/chronology как ручка).
+var api = app.MapGroup("/api");
+
 // ---- Авторизация ----
-app.MapPost("/auth/login", async (HttpRequest req) =>
+api.MapPost("/auth/login", async (HttpRequest req) =>
 {
     var body = await req.ReadFromJsonAsync<JsonObject>();
     var token = auth.Login((string?)body?["passphrase"]);
@@ -95,20 +103,20 @@ app.MapPost("/auth/login", async (HttpRequest req) =>
 });
 
 // ---- Статьи ----
-app.MapGet("/articles", async (AppDb db) =>
+api.MapGet("/articles", async (AppDb db) =>
 {
     var rows = await db.Articles.OrderByDescending(a => a.CreatedAt).ToListAsync();
     var arr = new JsonArray(rows.Select(r => JsonNode.Parse(r.Json)).ToArray());
     return Results.Json(arr);
 });
 
-app.MapGet("/articles/{slug}", async (string slug, AppDb db) =>
+api.MapGet("/articles/{slug}", async (string slug, AppDb db) =>
 {
     var row = await db.Articles.FindAsync(slug);
     return row is null ? Results.NotFound() : Results.Json(JsonNode.Parse(row.Json));
 });
 
-app.MapPost("/articles", async (HttpRequest req, AppDb db) =>
+api.MapPost("/articles", async (HttpRequest req, AppDb db) =>
 {
     if (!auth.IsMaster(req)) return Deny();
     var body = await req.ReadFromJsonAsync<JsonObject>();
@@ -126,7 +134,7 @@ app.MapPost("/articles", async (HttpRequest req, AppDb db) =>
     return Results.Json(body);
 });
 
-app.MapPut("/articles/{slug}", async (string slug, HttpRequest req, AppDb db) =>
+api.MapPut("/articles/{slug}", async (string slug, HttpRequest req, AppDb db) =>
 {
     if (!auth.IsMaster(req)) return Deny();
     var row = await db.Articles.FindAsync(slug);
@@ -146,7 +154,7 @@ app.MapPut("/articles/{slug}", async (string slug, HttpRequest req, AppDb db) =>
     return Results.Json(body);
 });
 
-app.MapDelete("/articles/{slug}", async (string slug, HttpRequest req, AppDb db) =>
+api.MapDelete("/articles/{slug}", async (string slug, HttpRequest req, AppDb db) =>
 {
     if (!auth.IsMaster(req)) return Deny();
     var row = await db.Articles.FindAsync(slug);
@@ -177,20 +185,20 @@ async Task<IResult> PutList(HttpRequest req, AppDb db, string key)
     return Results.Json(body);
 }
 
-app.MapGet("/news", (AppDb db) => GetList(db, "news"));
-app.MapPut("/news", (HttpRequest req, AppDb db) => PutList(req, db, "news"));
-app.MapGet("/chronology", (AppDb db) => GetList(db, "chronology"));
-app.MapPut("/chronology", (HttpRequest req, AppDb db) => PutList(req, db, "chronology"));
+api.MapGet("/news", (AppDb db) => GetList(db, "news"));
+api.MapPut("/news", (HttpRequest req, AppDb db) => PutList(req, db, "news"));
+api.MapGet("/chronology", (AppDb db) => GetList(db, "chronology"));
+api.MapPut("/chronology", (HttpRequest req, AppDb db) => PutList(req, db, "chronology"));
 
 // ---- Предложка ----
-app.MapGet("/suggestions", async (HttpRequest req, AppDb db) =>
+api.MapGet("/suggestions", async (HttpRequest req, AppDb db) =>
 {
     if (!auth.IsMaster(req)) return Deny();
     var rows = await db.Suggestions.OrderByDescending(s => s.CreatedAt).ToListAsync();
     return Results.Json(rows.Select(ToDto));
 });
 
-app.MapPost("/suggestions", async (HttpRequest req, AppDb db) =>
+api.MapPost("/suggestions", async (HttpRequest req, AppDb db) =>
 {
     var body = await req.ReadFromJsonAsync<JsonObject>();
     var text = ((string?)body?["text"] ?? "").Trim();
@@ -208,7 +216,7 @@ app.MapPost("/suggestions", async (HttpRequest req, AppDb db) =>
     return Results.Json(ToDto(row));
 });
 
-app.MapMethods("/suggestions/{id}", ["PATCH"], async (string id, HttpRequest req, AppDb db) =>
+api.MapMethods("/suggestions/{id}", ["PATCH"], async (string id, HttpRequest req, AppDb db) =>
 {
     if (!auth.IsMaster(req)) return Deny();
     var row = await db.Suggestions.FindAsync(id);
@@ -219,7 +227,7 @@ app.MapMethods("/suggestions/{id}", ["PATCH"], async (string id, HttpRequest req
     return Results.NoContent();
 });
 
-app.MapDelete("/suggestions/{id}", async (string id, HttpRequest req, AppDb db) =>
+api.MapDelete("/suggestions/{id}", async (string id, HttpRequest req, AppDb db) =>
 {
     if (!auth.IsMaster(req)) return Deny();
     var row = await db.Suggestions.FindAsync(id);
@@ -232,7 +240,7 @@ app.MapDelete("/suggestions/{id}", async (string id, HttpRequest req, AppDb db) 
 });
 
 // ---- Загрузка изображений ----
-app.MapPost("/uploads", async (HttpRequest req) =>
+api.MapPost("/uploads", async (HttpRequest req) =>
 {
     if (!auth.IsMaster(req)) return Deny();
     if (!req.HasFormContentType) return Results.BadRequest();
@@ -246,9 +254,14 @@ app.MapPost("/uploads", async (HttpRequest req) =>
     await using (var stream = File.Create(path))
         await file.CopyToAsync(stream);
 
-    var url = $"{req.Scheme}://{req.Host}/uploads/{Uri.EscapeDataString(name)}";
+    // Относительный путь того же origin — работает за любым доменом/прокси.
+    var url = $"/api/uploads/{Uri.EscapeDataString(name)}";
     return Results.Ok(new { url });
 });
+
+// Клиентские маршруты сайта (/catalog, /article/…) отдаём index.html — роутер
+// разберётся уже в браузере. Стоит после /api, поэтому ручки в приоритете.
+app.MapFallbackToFile("index.html");
 
 app.Run();
 

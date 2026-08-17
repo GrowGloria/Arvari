@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+.github
+backend/bin
+backend/obj
+backend/wwwroot
+backend/uploads
+backend/*.db
+backend/*.db-shm
+backend/*.db-wal
+**/*.md
+.env
+.env.local
