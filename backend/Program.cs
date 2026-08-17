@@ -1,20 +1,48 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Arvari.Api;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<AppDb>(o => o.UseSqlite("Data Source=arvari.db"));
+// Путь к базе и папке загрузок — из окружения, чтобы указать на постоянный
+// диск хостинга (например /data). По умолчанию — рядом с приложением.
+var dbPath = Environment.GetEnvironmentVariable("ARVARI_DB") ?? "arvari.db";
+var uploadsDir = Environment.GetEnvironmentVariable("ARVARI_UPLOADS")
+                 ?? Path.Combine(builder.Environment.ContentRootPath, "uploads");
+Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(dbPath))!);
+Directory.CreateDirectory(uploadsDir);
+
+// PaaS-хостинги передают порт в переменной PORT.
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port)) builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
+// Домены фронтенда, которым разрешён доступ. Продакшн-адрес добавляется через
+// ARVARI_CORS (можно несколько через запятую); localhost для разработки всегда.
+var corsOrigins = new List<string>
+{
+    "http://localhost:5173", "http://127.0.0.1:5173",
+    "http://localhost:4173", "http://127.0.0.1:4173",
+};
+var extraCors = Environment.GetEnvironmentVariable("ARVARI_CORS");
+if (!string.IsNullOrWhiteSpace(extraCors))
+    corsOrigins.AddRange(extraCors.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+
+builder.Services.AddDbContext<AppDb>(o => o.UseSqlite($"Data Source={dbPath}"));
 builder.Services.AddSingleton<Auth>();
 builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
-    .WithOrigins(
-        "http://localhost:5173", "http://127.0.0.1:5173",
-        "http://localhost:4173", "http://127.0.0.1:4173")
+    .WithOrigins(corsOrigins.ToArray())
     .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
     .WithHeaders("Content-Type", "Authorization")));
 
 var app = builder.Build();
+
+// За обратным прокси хостинга берём реальную схему/домен (для https-URL картинок).
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost,
+});
 
 // Создаём базу и наполняем хронологию при первом запуске.
 using (var scope = app.Services.CreateScope())
@@ -45,9 +73,7 @@ app.Use(async (ctx, next) =>
     }
 });
 
-// Загруженные картинки отдаём как статику из папки uploads рядом с базой.
-var uploadsDir = Path.Combine(app.Environment.ContentRootPath, "uploads");
-Directory.CreateDirectory(uploadsDir);
+// Загруженные картинки отдаём как статику из папки uploads (см. uploadsDir выше).
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsDir),

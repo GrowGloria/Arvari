@@ -8,6 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Стартовая хронология должна попасть в сборку/контейнер. -->
+    <Content Update="Seed\**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
     <!-- Явно берём патченую нативную библиотеку SQLite: транзитивная 2.1.11
          помечена уязвимостью GHSA-2m69-gcr7-jv3q. -->
