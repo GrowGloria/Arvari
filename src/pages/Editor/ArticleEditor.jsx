@@ -6,6 +6,7 @@ import { CATEGORIES } from '../../data/categories';
 import { articleFromDraft } from '../../data/articles';
 import { useContent } from '../../store/contentStore';
 import { draftFromObsidian } from '../../lib/obsidianImport';
+import { uploadImage } from '../../api/uploads';
 import Markdown from '../../components/Markdown';
 
 // Каждая кнопка тулбара оборачивает выделение или вставляет разметку.
@@ -34,11 +35,13 @@ const ARCHIVE_IMAGES = [
 
 export default function ArticleEditor({ initial = null, editSlug = null }) {
   const editing = !!editSlug;
-  const { publishArticle, articles, deleteArticle, restoreDeleted, deletedCount } = useContent();
+  const { publishArticle, articles, deleteArticle } = useContent();
   const bodyRef = useRef(null);
   const [showPreview, setShowPreview] = useState(false);
   const [imported, setImported] = useState(null);
   const [dragOver, setDragOver] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [filter, setFilter] = useState('');
   const [confirmingSlug, setConfirmingSlug] = useState('');
   const [title, setTitle] = useState(initial?.title || '');
@@ -70,15 +73,24 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
 
   const coverPosition = `${Math.round(coverPos.x)}% ${Math.round(coverPos.y)}%`;
 
-  function onPublish() {
-    if (!title.trim()) return;
+  async function onPublish() {
+    if (!title.trim() || saving) return;
+    setSaving(true);
+    setSaveError('');
     // В режиме правки сохраняем исходный slug, даже если название изменилось.
-    const article = articleFromDraft(
+    const draft = articleFromDraft(
       { title, category, subcategory, excerpt, body, cover, coverPosition, facts },
       editSlug || undefined
     );
-    publishArticle(article);
-    setPublishedSlug(article.slug);
+    try {
+      // slug присваивает сервер — берём его из ответа.
+      const saved = await publishArticle(draft, editSlug || null);
+      setPublishedSlug(saved.slug);
+    } catch (e) {
+      setSaveError(e.message || 'Не удалось сохранить статью.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   function pickCover(url) {
@@ -124,15 +136,19 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
     markDirty();
   }
 
-  function onCoverFile(e) {
+  async function onCoverFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setCover(ev.target.result);
+    setSaveError('');
+    try {
+      // Загружаем на сервер (боевой режим) или получаем data-URL (мок).
+      const url = await uploadImage(file);
+      setCover(url);
       setCoverPos({ x: 50, y: 50 });
-    };
-    reader.readAsDataURL(file);
+      markDirty();
+    } catch (err) {
+      setSaveError(err.message || 'Не удалось загрузить изображение.');
+    }
   }
 
   function updateFact(index, patch) {
@@ -201,10 +217,14 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
     return [...list].sort((a, b) => a.title.localeCompare(b.title, 'ru'));
   }, [articles, filter]);
 
-  function confirmDelete(slug) {
-    deleteArticle(slug);
+  async function confirmDelete(slug) {
     setConfirmingSlug('');
-    if (publishedSlug === slug) setPublishedSlug('');
+    try {
+      await deleteArticle(slug);
+      if (publishedSlug === slug) setPublishedSlug('');
+    } catch (e) {
+      setSaveError(e.message || 'Не удалось удалить статью.');
+    }
   }
 
   return (
@@ -454,12 +474,13 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
               type="button"
               className="editor-actions__publish"
               onClick={onPublish}
-              disabled={!title.trim()}
+              disabled={!title.trim() || saving}
             >
-              {editing ? 'Сохранить изменения' : 'Опубликовать в свод'}
-            </button>
-            <button type="button" className="editor-actions__draft">
-              Сохранить черновик
+              {saving
+                ? 'Сохраняем…'
+                : editing
+                  ? 'Сохранить изменения'
+                  : 'Опубликовать в свод'}
             </button>
             {published ? (
               <span className="editor-actions__success">
@@ -467,6 +488,7 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
                 <Link to={`/article/${publishedSlug}`}>открыть</Link>
               </span>
             ) : null}
+            {saveError ? <span className="editor-actions__error">{saveError}</span> : null}
           </div>
         </div>
 
@@ -510,11 +532,6 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
       <div className="editor-card editor-manage">
         <div className="editor-card__head">
           <div className="editor-field__label">Существующие статьи — {articles.length}</div>
-          {deletedCount > 0 ? (
-            <button type="button" className="editor-manage__restore" onClick={restoreDeleted}>
-              Вернуть удалённые ({deletedCount})
-            </button>
-          ) : null}
         </div>
         <input
           type="text"

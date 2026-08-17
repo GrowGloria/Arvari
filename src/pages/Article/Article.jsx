@@ -35,9 +35,13 @@ export default function Article() {
   const infoboxRows = article.infobox?.rows || buildFallbackInfobox(article);
   const infoboxImage = article.infobox?.image || article.cover?.image || '';
 
-  function onDelete() {
-    deleteArticle(article.slug);
-    navigate(categoryMeta ? `/catalog/${categoryMeta.slug}` : '/catalog');
+  async function onDelete() {
+    try {
+      await deleteArticle(article.slug);
+      navigate(categoryMeta ? `/catalog/${categoryMeta.slug}` : '/catalog');
+    } catch (e) {
+      alert(e.message || 'Не удалось удалить статью.');
+    }
   }
 
   return (

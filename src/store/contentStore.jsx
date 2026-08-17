@@ -1,22 +1,38 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { NEWS as DEFAULT_NEWS } from '../data/home';
 import { EPOCHS as DEFAULT_EPOCHS } from '../data/chronology';
-import { mergeArticles } from '../data/articles';
-import { loadContent, saveContent } from '../api/content';
+import {
+  loadContent,
+  createArticle,
+  updateArticle,
+  removeArticle,
+  saveNews,
+  saveEpochs,
+} from '../api/content';
 
 /**
- * Хранилище редактируемого Мастером контента: вестники, хронология и
- * опубликованные статьи. Персистентность и транспорт вынесены в src/api —
- * при появлении C#-бэкенда меняется только он.
+ * Хранилище контента свода: статьи, вестники, хронология.
+ *
+ * Статьи пишутся точечно (создать/изменить/удалить). Вестники и хронология —
+ * целиком, с дебаунсом (правок много, а список маленький). Транспорт и режим
+ * (localStorage или бэкенд) спрятаны в src/api/content.
  */
 
 const ContentContext = createContext(null);
+const SAVE_DEBOUNCE_MS = 600;
 
 export function ContentProvider({ children }) {
   const [news, setNews] = useState(DEFAULT_NEWS);
   const [epochs, setEpochs] = useState(DEFAULT_EPOCHS);
-  const [userArticles, setUserArticles] = useState([]);
-  const [deletedSlugs, setDeletedSlugs] = useState([]);
+  const [articles, setArticles] = useState([]);
   const [hydrated, setHydrated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -30,11 +46,9 @@ export function ContentProvider({ children }) {
         if (cancelled) return;
         setNews(stored.news);
         setEpochs(stored.epochs);
-        setUserArticles(stored.articles);
-        setDeletedSlugs(stored.deletedSlugs);
+        setArticles(stored.articles);
         setError(null);
       } catch (e) {
-        // Свод остаётся на сид-данных, но пользователь должен знать о сбое.
         if (!cancelled) setError(e.message || 'Не удалось загрузить свод.');
       } finally {
         if (!cancelled) {
@@ -48,34 +62,28 @@ export function ContentProvider({ children }) {
     };
   }, []);
 
-  useEffect(() => {
-    if (!hydrated) return;
-    saveContent({ news, epochs, articles: userArticles, deletedSlugs })
-      .then(() => setSaveError(null))
-      .catch((e) => setSaveError(e.message || 'Не удалось сохранить изменения.'));
-  }, [news, epochs, userArticles, deletedSlugs, hydrated]);
+  // Дебаунс-сохранение целиковых списков. Первый прогон после загрузки
+  // пропускаем, чтобы не писать обратно только что прочитанное.
+  useDebouncedSave(news, hydrated, saveNews, setSaveError);
+  useDebouncedSave(epochs, hydrated, saveEpochs, setSaveError);
 
   const resetNews = useCallback(() => setNews(DEFAULT_NEWS), []);
   const resetEpochs = useCallback(() => setEpochs(DEFAULT_EPOCHS), []);
 
-  const publishArticle = useCallback((article) => {
-    setUserArticles((prev) => [article, ...prev.filter((a) => a.slug !== article.slug)]);
-    // Публикация под slug снимает возможную пометку удаления.
-    setDeletedSlugs((prev) => prev.filter((s) => s !== article.slug));
+  /** Создаёт или (если передан editSlug) обновляет статью. Возвращает сохранённую. */
+  const publishArticle = useCallback(async (article, editSlug = null) => {
+    const saved = editSlug ? await updateArticle(editSlug, article) : await createArticle(article);
+    setArticles((prev) => {
+      const without = prev.filter((a) => a.slug !== saved.slug && a.slug !== editSlug);
+      return [saved, ...without];
+    });
+    return saved;
   }, []);
 
-  const deleteArticle = useCallback((slug) => {
-    setUserArticles((prev) => prev.filter((a) => a.slug !== slug));
-    setDeletedSlugs((prev) => (prev.includes(slug) ? prev : [...prev, slug]));
+  const deleteArticle = useCallback(async (slug) => {
+    await removeArticle(slug);
+    setArticles((prev) => prev.filter((a) => a.slug !== slug));
   }, []);
-
-  const restoreDeleted = useCallback(() => setDeletedSlugs([]), []);
-
-  // Полный список: статьи Мастера + сид (без дублей), минус удалённые.
-  const articles = useMemo(
-    () => mergeArticles(userArticles).filter((a) => !deletedSlugs.includes(a.slug)),
-    [userArticles, deletedSlugs]
-  );
 
   const value = useMemo(
     () => ({
@@ -86,33 +94,33 @@ export function ContentProvider({ children }) {
       setEpochs,
       resetEpochs,
       articles,
-      userArticles,
       publishArticle,
       deleteArticle,
-      restoreDeleted,
-      deletedCount: deletedSlugs.length,
       loading,
       error,
       saveError,
     }),
-    [
-      news,
-      epochs,
-      resetNews,
-      resetEpochs,
-      articles,
-      userArticles,
-      publishArticle,
-      deleteArticle,
-      restoreDeleted,
-      deletedSlugs.length,
-      loading,
-      error,
-      saveError,
-    ]
+    [news, epochs, resetNews, resetEpochs, articles, publishArticle, deleteArticle, loading, error, saveError]
   );
 
   return <ContentContext.Provider value={value}>{children}</ContentContext.Provider>;
+}
+
+function useDebouncedSave(value, hydrated, save, onError) {
+  const skipFirst = useRef(true);
+  useEffect(() => {
+    if (!hydrated) return undefined;
+    if (skipFirst.current) {
+      skipFirst.current = false;
+      return undefined;
+    }
+    const id = setTimeout(() => {
+      save(value)
+        .then(() => onError(null))
+        .catch((e) => onError(e.message || 'Не удалось сохранить изменения.'));
+    }, SAVE_DEBOUNCE_MS);
+    return () => clearTimeout(id);
+  }, [value, hydrated, save, onError]);
 }
 
 // eslint-disable-next-line react-refresh/only-export-components -- провайдер и хук колокейтед намеренно

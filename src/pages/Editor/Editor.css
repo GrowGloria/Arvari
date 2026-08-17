@@ -694,6 +694,11 @@
   color: var(--color-success);
 }
 
+.editor-actions__error {
+  font-size: 14px;
+  color: var(--color-error);
+}
+
 /* Article management (delete) */
 .editor-manage {
   margin-top: 20px;

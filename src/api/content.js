@@ -1,25 +1,26 @@
 import { isMockMode, readLocal, writeLocal, request } from './client';
-import { NEWS } from '../data/home';
-import { EPOCHS } from '../data/chronology';
+import { NEWS as DEFAULT_NEWS } from '../data/home';
+import { EPOCHS as DEFAULT_EPOCHS } from '../data/chronology';
 
 /**
- * Редактируемый Мастером контент: статьи, вестники, хронология.
+ * Доступ к контенту свода: статьи, вестники, хронология.
  *
- * Мок-режим держит всё одним значением в localStorage. Боевой режим ходит
- * в отдельные ручки — см. docs/API.md. Сигнатуры функций одинаковы в обоих
- * режимах, поэтому store и компоненты не меняются при переключении.
+ * Мок-режим (VITE_API_URL пуст) держит всё в localStorage. Боевой режим ходит
+ * в ручки бэкенда (docs/API.md). Компоненты работают одинаково в обоих —
+ * ветвление спрятано здесь.
  */
 
-const KEY = 'arvari_content';
+const ARTICLES_KEY = 'arvari_articles';
+const NEWS_KEY = 'arvari_news';
+const CHRONO_KEY = 'arvari_chronology';
 
+/** Первичная загрузка свода. */
 export async function loadContent() {
   if (isMockMode) {
-    const stored = readLocal(KEY, null);
     return {
-      news: Array.isArray(stored?.news) ? stored.news : NEWS,
-      epochs: Array.isArray(stored?.epochs) ? stored.epochs : EPOCHS,
-      articles: Array.isArray(stored?.articles) ? stored.articles : [],
-      deletedSlugs: Array.isArray(stored?.deletedSlugs) ? stored.deletedSlugs : [],
+      articles: readLocal(ARTICLES_KEY, []),
+      news: readLocal(NEWS_KEY, DEFAULT_NEWS),
+      epochs: readLocal(CHRONO_KEY, DEFAULT_EPOCHS),
     };
   }
 
@@ -28,22 +29,53 @@ export async function loadContent() {
     request('/news'),
     request('/chronology'),
   ]);
-  // deletedSlugs — костыль мок-режима: сид-статьи нельзя удалить физически.
-  // На бэкенде удаление настоящее, поэтому список всегда пуст.
-  return { articles, news, epochs, deletedSlugs: [] };
+  return { articles, news, epochs };
 }
 
-/**
- * Сохранение целиком — упрощение мок-режима.
- * На бэкенде вместо него вызываются точечные ручки:
- *   статья создана/изменена → POST /articles | PUT /articles/{slug}
- *   статья удалена          → DELETE /articles/{slug}
- *   вестники                → PUT /news
- *   хронология              → PUT /chronology
- */
-export async function saveContent({ news, epochs, articles, deletedSlugs }) {
+/* ---- Статьи (точечные операции) ---- */
+
+export async function createArticle(article) {
   if (isMockMode) {
-    return writeLocal(KEY, { news, epochs, articles, deletedSlugs });
+    const list = readLocal(ARTICLES_KEY, []);
+    writeLocal(ARTICLES_KEY, [article, ...list.filter((a) => a.slug !== article.slug)]);
+    return article;
   }
-  throw new Error('saveContent: в боевом режиме используйте точечные ручки (docs/API.md)');
+  return request('/articles', { method: 'POST', body: article, auth: true });
+}
+
+export async function updateArticle(slug, article) {
+  if (isMockMode) {
+    const list = readLocal(ARTICLES_KEY, []);
+    const next = { ...article, slug };
+    writeLocal(ARTICLES_KEY, list.map((a) => (a.slug === slug ? next : a)));
+    return next;
+  }
+  return request(`/articles/${encodeURIComponent(slug)}`, { method: 'PUT', body: article, auth: true });
+}
+
+export async function removeArticle(slug) {
+  if (isMockMode) {
+    const list = readLocal(ARTICLES_KEY, []);
+    writeLocal(ARTICLES_KEY, list.filter((a) => a.slug !== slug));
+    return;
+  }
+  await request(`/articles/${encodeURIComponent(slug)}`, { method: 'DELETE', auth: true });
+}
+
+/* ---- Вестники и хронология (целиковый список) ---- */
+
+export async function saveNews(list) {
+  if (isMockMode) {
+    writeLocal(NEWS_KEY, list);
+    return list;
+  }
+  return request('/news', { method: 'PUT', body: list, auth: true });
+}
+
+export async function saveEpochs(list) {
+  if (isMockMode) {
+    writeLocal(CHRONO_KEY, list);
+    return list;
+  }
+  return request('/chronology', { method: 'PUT', body: list, auth: true });
 }
