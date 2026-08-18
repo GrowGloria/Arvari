@@ -8,14 +8,13 @@ import ArticleRow from '../../components/ArticleRow';
 import { sortArticles } from '../../data/articles';
 import { CATEGORIES, categoryCounts } from '../../data/categories';
 import { POPULAR_LIMIT, RECENT_LIMIT } from '../../data/home';
-import { chronologyTeaser } from '../../data/chronology';
 import { useContent } from '../../store/contentStore';
 import { HERO_IMAGES, HERO_HOLD_MS } from './heroImages';
 import { useCrossfade } from '../../lib/useCrossfade';
 import './Home.css';
 
 export default function Home() {
-  const { news, articles, epochs } = useContent();
+  const { news, articles } = useContent();
   const hero = useCrossfade(HERO_IMAGES, HERO_HOLD_MS);
 
   // Подборки считаются по самим статьям, а не по заранее забитому списку.
@@ -24,7 +23,6 @@ export default function Home() {
     [articles]
   );
   const recent = useMemo(() => sortArticles(articles, 'date').slice(0, RECENT_LIMIT), [articles]);
-  const teaser = useMemo(() => chronologyTeaser(epochs), [epochs]);
 
   const total = articles.length;
   const counts = useMemo(() => categoryCounts(articles), [articles]);
@@ -115,23 +113,6 @@ export default function Home() {
               ))}
             </div>
           </div>
-
-          <Link to="/chronology" className="timeline-teaser">
-            <div className="timeline-teaser__title">Хронология Арвари</div>
-            <div className="timeline-teaser__subtitle">
-              От первой искры цикла до Великой Тишины — все эпохи мира на одной ленте.
-            </div>
-            <div className="timeline-teaser__list">
-              {teaser.map((t) => (
-                <div className={`timeline-teaser__item timeline-teaser__item--${t.style}`} key={t.text}>
-                  <span className="timeline-teaser__dot" style={{ background: t.dot }} />
-                  <span className="timeline-teaser__year">{t.year}</span>
-                  <span className="timeline-teaser__text">{t.text}</span>
-                </div>
-              ))}
-            </div>
-            <div className="timeline-teaser__cta">Открыть хронологию →</div>
-          </Link>
 
           <div className="categories-card">
             <h3>Категории</h3>
