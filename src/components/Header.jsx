@@ -3,6 +3,7 @@ import Logo from './Logo';
 import SearchBar from './SearchBar';
 import { getRandomArticle } from '../data/articles';
 import { useContent } from '../store/contentStore';
+import { useHideOnScroll } from '../lib/useHideOnScroll';
 import './Header.css';
 
 export default function Header({ showSearch = false, searchPlaceholder, rightSlot = null }) {
@@ -10,6 +11,7 @@ export default function Header({ showSearch = false, searchPlaceholder, rightSlo
   const navigate = useNavigate();
   const { articles } = useContent();
   const onArticlePage = location.pathname.startsWith('/article/');
+  const hidden = useHideOnScroll();
 
   function goToRandomArticle() {
     const article = getRandomArticle(articles);
@@ -18,7 +20,7 @@ export default function Header({ showSearch = false, searchPlaceholder, rightSlo
   }
 
   return (
-    <header className="site-header">
+    <header className={`site-header${hidden ? ' site-header--hidden' : ''}`}>
       <div className="container site-header__inner">
         <Logo />
         <nav className="site-header__nav">
