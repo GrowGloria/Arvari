@@ -122,26 +122,71 @@
   padding: 16px;
 }
 
+.article-toc__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
 .article-toc__label {
   font-family: var(--font-heading);
   font-size: 11px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--color-text-muted);
-  margin-bottom: 10px;
+}
+
+.article-toc__toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--color-primary);
+}
+
+.article-toc__toggle:hover {
+  color: var(--color-primary-hover);
 }
 
 .article-toc__list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: toc-h2;
 }
 
-.article-toc__list a {
+.article-toc__item:not(.article-toc__sub) {
+  counter-increment: toc-h2;
+  counter-reset: toc-h3;
+}
+
+.article-toc__item.article-toc__sub {
+  counter-increment: toc-h3;
+  padding-left: 14px;
+}
+
+.article-toc__item a {
+  display: block;
   font-size: 13px;
   padding: 5px 0;
   color: var(--color-text-secondary-2);
-  border-left: 2px solid transparent;
+}
+
+.article-toc__item a:hover {
+  color: var(--color-primary);
+}
+
+.article-toc__item:not(.article-toc__sub) > a::before {
+  content: counter(toc-h2) ".\00a0";
+  color: var(--color-text-muted);
+}
+
+.article-toc__item.article-toc__sub > a::before {
+  content: counter(toc-h2) "." counter(toc-h3) "\00a0";
+  color: var(--color-text-muted);
 }
 
 .art-body p {
@@ -409,7 +454,10 @@
 
 @media (max-width: 960px) {
   .article-main {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 24px;
   }
 
   .article-layout {
@@ -418,6 +466,17 @@
 
   .article-toc {
     position: static;
+  }
+
+  /* На телефоне инфоблок с картинкой и краткой справкой — наверх, над текстом.
+     display:contents «распластывает» сайдбар, чтобы можно было переставить
+     инфобокс порядком выше основного содержимого. */
+  .article-sidebar {
+    display: contents;
+  }
+
+  .infobox {
+    order: -1;
   }
 }
 

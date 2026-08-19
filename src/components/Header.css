@@ -18,6 +18,7 @@
 
 .site-header__nav {
   display: flex;
+  align-items: baseline;
   gap: 28px;
   font-family: var(--font-heading);
   font-size: 14px;

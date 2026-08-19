@@ -22,6 +22,7 @@ export default function Article() {
   const { open } = useLightbox();
   const { articles, deleteArticle, loading } = useContent();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [tocOpen, setTocOpen] = useState(true);
   const article = getArticleBySlug(articles, slug);
 
   // Пока свод грузится, статьи ещё нет — показывать 404 рано.
@@ -94,14 +95,28 @@ export default function Article() {
           <div className="article-layout">
             {toc.length > 0 && (
               <nav className="article-toc">
-                <div className="article-toc__label">Оглавление</div>
-                <div className="article-toc__list">
-                  {toc.map((t, i) => (
-                    <a key={i} href={t.href} style={{ paddingLeft: t.indent }}>
-                      {t.label}
-                    </a>
-                  ))}
+                <div className="article-toc__head">
+                  <span className="article-toc__label">Содержание</span>
+                  <button
+                    type="button"
+                    className="article-toc__toggle"
+                    onClick={() => setTocOpen((o) => !o)}
+                  >
+                    {tocOpen ? 'скрыть' : 'показать'}
+                  </button>
                 </div>
+                {tocOpen && (
+                  <ol className="article-toc__list">
+                    {toc.map((t, i) => (
+                      <li
+                        key={i}
+                        className={`article-toc__item${t.indent ? ' article-toc__sub' : ''}`}
+                      >
+                        <a href={t.href}>{t.label}</a>
+                      </li>
+                    ))}
+                  </ol>
+                )}
               </nav>
             )}
 
