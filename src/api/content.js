@@ -62,6 +62,22 @@ export async function removeArticle(slug) {
   await request(`/articles/${encodeURIComponent(slug)}`, { method: 'DELETE', auth: true });
 }
 
+/** Отметить просмотр статьи (+1 к счётчику). Возвращает { views }. */
+export async function registerView(slug) {
+  if (isMockMode) {
+    const list = readLocal(ARTICLES_KEY, []);
+    let views = 0;
+    const next = list.map((a) => {
+      if (a.slug !== slug) return a;
+      views = (a.views || 0) + 1;
+      return { ...a, views };
+    });
+    writeLocal(ARTICLES_KEY, next);
+    return { views };
+  }
+  return request(`/articles/${encodeURIComponent(slug)}/view`, { method: 'POST' });
+}
+
 /* ---- Вестники и хронология (целиковый список) ---- */
 
 export async function saveNews(list) {

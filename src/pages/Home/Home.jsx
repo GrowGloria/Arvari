@@ -79,7 +79,7 @@ export default function Home() {
 
           <section className="home-section">
             <div className="home-section__head">
-              <h2>Последние открытые статьи</h2>
+              <h2>Последние добавленные статьи</h2>
               <span className="home-section__count">{total} статей всего</span>
             </div>
             {recent.length ? (

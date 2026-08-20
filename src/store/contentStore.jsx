@@ -14,6 +14,7 @@ import {
   createArticle,
   updateArticle,
   removeArticle,
+  registerView as apiRegisterView,
   saveNews,
   saveEpochs,
 } from '../api/content';
@@ -85,6 +86,18 @@ export function ContentProvider({ children }) {
     setArticles((prev) => prev.filter((a) => a.slug !== slug));
   }, []);
 
+  /** Отметить просмотр статьи. Не критично — тихо игнорируем сбой. */
+  const registerView = useCallback(async (slug) => {
+    try {
+      const res = await apiRegisterView(slug);
+      if (res && typeof res.views === 'number') {
+        setArticles((prev) => prev.map((a) => (a.slug === slug ? { ...a, views: res.views } : a)));
+      }
+    } catch {
+      /* просмотр не показали — и ладно */
+    }
+  }, []);
+
   const value = useMemo(
     () => ({
       news,
@@ -96,11 +109,12 @@ export function ContentProvider({ children }) {
       articles,
       publishArticle,
       deleteArticle,
+      registerView,
       loading,
       error,
       saveError,
     }),
-    [news, epochs, resetNews, resetEpochs, articles, publishArticle, deleteArticle, loading, error, saveError]
+    [news, epochs, resetNews, resetEpochs, articles, publishArticle, deleteArticle, registerView, loading, error, saveError]
   );
 
   return <ContentContext.Provider value={value}>{children}</ContentContext.Provider>;

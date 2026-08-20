@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
@@ -20,10 +20,20 @@ export default function Article() {
   const navigate = useNavigate();
   const master = useIsMaster();
   const { open } = useLightbox();
-  const { articles, deleteArticle, loading } = useContent();
+  const { articles, deleteArticle, loading, registerView } = useContent();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [tocOpen, setTocOpen] = useState(true);
+  const viewedRef = useRef(null);
   const article = getArticleBySlug(articles, slug);
+
+  // Открытие статьи — один засчитанный просмотр на slug (StrictMode/повторный
+  // рендер не накрутят: ref держит уже отмеченный адрес).
+  useEffect(() => {
+    if (article && viewedRef.current !== slug) {
+      viewedRef.current = slug;
+      registerView(slug);
+    }
+  }, [article, slug, registerView]);
 
   // Пока свод грузится, статьи ещё нет — показывать 404 рано.
   if (!article && loading) return <ArticleLoading />;

@@ -166,6 +166,20 @@ api.MapDelete("/articles/{slug}", async (string slug, HttpRequest req, AppDb db)
     return Results.NoContent();
 });
 
+// Просмотр статьи: публичная ручка, любой заход увеличивает счётчик на 1.
+// Счётчик лежит внутри JSON статьи (поле views) — правим его на месте.
+api.MapPost("/articles/{slug}/view", async (string slug, AppDb db) =>
+{
+    var row = await db.Articles.FindAsync(slug);
+    if (row is null) return Results.NotFound();
+    var obj = JsonNode.Parse(row.Json)!.AsObject();
+    var views = ((int?)obj["views"] ?? 0) + 1;
+    obj["views"] = views;
+    row.Json = obj.ToJsonString();
+    await db.SaveChangesAsync();
+    return Results.Ok(new { views });
+});
+
 // ---- Вестники и хронология (целиковые списки) ----
 async Task<IResult> GetList(AppDb db, string key)
 {
