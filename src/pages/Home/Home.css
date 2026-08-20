@@ -315,25 +315,66 @@
 }
 
 @media (max-width: 640px) {
+  /* «Популярные» — компактной сеткой 2×N, а не гигантскими карточками
+     во всю ширину (так и портреты меньше растягиваются, и лист короче). */
   .home-popular-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
   }
 
+  .home-popular-grid .article-card__body {
+    padding: 12px 12px 14px;
+  }
+
+  .home-popular-grid .article-card__title {
+    font-size: 15px;
+  }
+
+  .home-popular-grid .article-card__excerpt {
+    font-size: 12.5px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Заставка — ниже и компактнее, без огромного текста. */
   .hero {
-    height: 380px;
-  }
-
-  .hero__title {
-    font-size: 38px;
+    height: 300px;
   }
 
   .hero__kicker {
-    font-size: 18px;
-    letter-spacing: 3px;
+    font-size: 14px;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .hero__title {
+    font-size: 32px;
+    margin-bottom: 12px;
   }
 
   .hero__stats {
-    font-size: 20px;
+    font-size: 15px;
+    margin-top: 14px;
+  }
+
+  /* Меньше воздуха между блоками — страница короче и собраннее. */
+  .home-section {
+    margin-bottom: 36px;
+  }
+
+  .home-section__head {
+    margin-bottom: 16px;
+  }
+
+  .home-section__head h2 {
+    font-size: 22px;
+  }
+
+  .home-sidebar {
+    gap: 20px;
   }
 }
 
