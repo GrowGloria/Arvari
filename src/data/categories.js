@@ -24,6 +24,7 @@ export const CATEGORIES = [
   },
   { slug: 'sobytiya', name: 'События' },
   { slug: 'sushchestva', name: 'Существа' },
+  { slug: 'rasy', name: 'Расы' },
   { slug: 'fraktsii', name: 'Фракции' },
   {
     slug: 'artefakty',
