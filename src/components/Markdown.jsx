@@ -8,7 +8,7 @@ import { useLightbox } from './Lightbox';
 import './Markdown.css';
 
 function resolveAsset(file) {
-  if (/^(https?:)?\/\//.test(file) || file.startsWith('/')) return file;
+  if (/^(https?:)?\/\//.test(file) || file.startsWith('/') || file.startsWith('data:')) return file;
   return uploadUrl(file);
 }
 

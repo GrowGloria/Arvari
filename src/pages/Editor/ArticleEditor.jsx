@@ -37,6 +37,8 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
   const editing = !!editSlug;
   const { publishArticle, articles, deleteArticle } = useContent();
   const bodyRef = useRef(null);
+  const bodyImageInputRef = useRef(null);
+  const [imgUploading, setImgUploading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [imported, setImported] = useState(null);
   const [dragOver, setDragOver] = useState(false);
@@ -148,6 +150,44 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
       markDirty();
     } catch (err) {
       setSaveError(err.message || 'Не удалось загрузить изображение.');
+    }
+  }
+
+  // Вставляет текст в тело статьи по позиции курсора (или в конец в режиме
+  // предпросмотра, когда textarea не смонтирован).
+  function insertAtCursor(text) {
+    const ta = bodyRef.current;
+    if (!ta) {
+      setBody((b) => b + text);
+      return;
+    }
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const current = ta.value;
+    setBody(current.slice(0, start) + text + current.slice(end));
+    requestAnimationFrame(() => {
+      ta.focus();
+      const pos = start + text.length;
+      ta.setSelectionRange(pos, pos);
+    });
+  }
+
+  // Загружает картинку с компьютера и вставляет её в тело статьи готовой
+  // разметкой ![[…]] (ссылка на файл в архиве мира).
+  async function onBodyImageFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setSaveError('');
+    setImgUploading(true);
+    try {
+      const url = await uploadImage(file);
+      insertAtCursor(`\n![[${url}]]\n`);
+      markDirty();
+    } catch (err) {
+      setSaveError(err.message || 'Не удалось загрузить изображение.');
+    } finally {
+      setImgUploading(false);
     }
   }
 
@@ -432,6 +472,22 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
                   {b.label}
                 </button>
               ))}
+              <button
+                type="button"
+                title="Загрузить картинку с компьютера — вставится в текст"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => bodyImageInputRef.current?.click()}
+                disabled={imgUploading}
+              >
+                {imgUploading ? '⏳ Загрузка…' : '🖼 Загрузить'}
+              </button>
+              <input
+                ref={bodyImageInputRef}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={onBodyImageFile}
+              />
               <div className="editor-toolbar__spacer" />
               <button
                 type="button"
@@ -464,7 +520,8 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
             <div className="editor-body__footer">
               <span>{wordCount} слов</span>
               <span className="editor-body__hint">
-                Разметка Obsidian: **жирный**, _курсив_, ## Заголовок, [[Ссылка]], ![[файл.png]]
+                Разметка Obsidian: **жирный**, _курсив_, ## Заголовок, [[Ссылка]]. Картинку в
+                текст — кнопкой «🖼 Загрузить».
               </span>
             </div>
           </div>
@@ -524,7 +581,7 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
             <span>ЗАМЕТКА МАСТЕРА</span>
             <br />
             Статья попадёт в каталог сразу после публикации. Игроки увидят её в разделе «Последние
-            открытые статьи».
+            добавленные статьи».
           </div>
         </aside>
       </div>
