@@ -12,6 +12,13 @@
       rel="stylesheet"
     />
     <title>Арвари — свод знаний о мире</title>
+    <script>
+      // Тема применяется до отрисовки, чтобы страница не мигала светлым.
+      try {
+        if (localStorage.getItem('arvari_theme') === 'dark')
+          document.documentElement.setAttribute('data-theme', 'dark');
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

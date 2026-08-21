@@ -1,7 +1,7 @@
 .md {
   font-size: 17px;
   line-height: 1.75;
-  color: #3a2a18;
+  color: var(--color-prose);
 }
 
 .md p {

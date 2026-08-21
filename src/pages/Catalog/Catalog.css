@@ -150,7 +150,7 @@
   display: flex;
   gap: 8px;
   font-size: 14px;
-  color: #000;
+  color: var(--color-text-strong);
   align-items: center;
 }
 
@@ -170,7 +170,7 @@
   cursor: pointer;
   font: inherit;
   padding: 0;
-  color: #000;
+  color: var(--color-text-strong);
 }
 
 .catalog-sort__link:hover {

@@ -1,6 +1,7 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import Logo from './Logo';
 import SearchBar from './SearchBar';
+import ThemeToggle from './ThemeToggle';
 import { getRandomArticle } from '../data/articles';
 import { useContent } from '../store/contentStore';
 import { useHideOnScroll } from '../lib/useHideOnScroll';
@@ -49,6 +50,7 @@ export default function Header({ showSearch = false, searchPlaceholder, rightSlo
         ) : (
           <div className="site-header__spacer" />
         )}
+        <ThemeToggle />
         {rightSlot}
       </div>
     </header>
