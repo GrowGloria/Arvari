@@ -218,25 +218,6 @@ api.MapPut("/news", (HttpRequest req, AppDb db) => PutList(req, db, "news"));
 api.MapGet("/chronology", (AppDb db) => GetList(db, "chronology"));
 api.MapPut("/chronology", (HttpRequest req, AppDb db) => PutList(req, db, "chronology"));
 
-// ---- Интерактивная карта: { image, markers[] } ----
-api.MapGet("/map", async (AppDb db) =>
-{
-    var row = await db.Kv.FindAsync("map");
-    return Results.Json(JsonNode.Parse(row?.Json ?? "{\"image\":\"\",\"markers\":[]}"));
-});
-
-api.MapPut("/map", async (HttpRequest req, AppDb db) =>
-{
-    if (!auth.IsMaster(req)) return Deny();
-    var body = await req.ReadFromJsonAsync<JsonObject>();
-    if (body is null) return Results.BadRequest();
-    var row = await db.Kv.FindAsync("map");
-    if (row is null) db.Kv.Add(new KvRow { Key = "map", Json = body.ToJsonString() });
-    else row.Json = body.ToJsonString();
-    await db.SaveChangesAsync();
-    return Results.Json(body);
-});
-
 // ---- Предложка ----
 api.MapGet("/suggestions", async (HttpRequest req, AppDb db) =>
 {

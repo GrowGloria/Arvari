@@ -41,9 +41,6 @@ export default function Header({ showSearch = false, searchPlaceholder, rightSlo
           <NavLink to="/chronology" className="site-header__link">
             Хронология
           </NavLink>
-          <NavLink to="/map" className="site-header__link">
-            Карта
-          </NavLink>
           <NavLink to="/editor" className="site-header__link">
             Редактор ⚜
           </NavLink>
