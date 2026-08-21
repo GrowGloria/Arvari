@@ -25,11 +25,18 @@ export async function loadContent() {
   }
 
   const [articles, news, epochs] = await Promise.all([
-    request('/articles'),
+    // auth:true — если Мастер вошёл, сервер добавит черновики; иначе только опубликованное.
+    request('/articles', { auth: true }),
     request('/news'),
     request('/chronology'),
   ]);
   return { articles, news, epochs };
+}
+
+/** Перечитать только список статей (после входа/выхода Мастера — меняется видимость черновиков). */
+export async function loadArticles() {
+  if (isMockMode) return readLocal(ARTICLES_KEY, []);
+  return request('/articles', { auth: true });
 }
 
 /* ---- Статьи (точечные операции) ---- */

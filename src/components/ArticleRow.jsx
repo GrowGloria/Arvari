@@ -10,6 +10,7 @@ export default function ArticleRow({ article }) {
       <div className="article-row__body">
         <div className="article-row__meta">
           <span className="article-row__badge">{article.tag || article.category}</span>
+          {article.draft ? <span className="article-row__draft">черновик</span> : null}
           <span className="article-row__date">{formatRelativeDate(article.date)}</span>
         </div>
         <div className="article-row__title">{article.title}</div>

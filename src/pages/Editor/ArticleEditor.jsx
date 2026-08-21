@@ -51,6 +51,7 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
   const [subcategory, setSubcategory] = useState(initial?.subcategory || '');
   const [excerpt, setExcerpt] = useState(initial?.excerpt || '');
   const [body, setBody] = useState(initial?.body || '');
+  const [draft, setDraft] = useState(!!initial?.draft);
   const [cover, setCover] = useState(initial?.cover || '');
   const [coverPos, setCoverPos] = useState(() => parsePosition(initial?.coverPosition));
   const [dragging, setDragging] = useState(false);
@@ -80,13 +81,13 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
     setSaving(true);
     setSaveError('');
     // В режиме правки сохраняем исходный slug, даже если название изменилось.
-    const draft = articleFromDraft(
-      { title, category, subcategory, excerpt, body, cover, coverPosition, facts },
+    const article = articleFromDraft(
+      { title, category, subcategory, excerpt, body, cover, coverPosition, facts, draft },
       editSlug || undefined
     );
     try {
       // slug присваивает сервер — берём его из ответа.
-      const saved = await publishArticle(draft, editSlug || null);
+      const saved = await publishArticle(article, editSlug || null);
       setPublishedSlug(saved.slug);
     } catch (e) {
       setSaveError(e.message || 'Не удалось сохранить статью.');
@@ -527,6 +528,20 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
           </div>
 
           <div className="editor-actions">
+            <label
+              className="editor-draft-toggle"
+              title="Черновик виден только вам (Мастеру) — игроки его не увидят в каталоге, на главной и в поиске"
+            >
+              <input
+                type="checkbox"
+                checked={draft}
+                onChange={(e) => {
+                  setDraft(e.target.checked);
+                  markDirty();
+                }}
+              />
+              Черновик (не показывать игрокам)
+            </label>
             <button
               type="button"
               className="editor-actions__publish"
@@ -535,14 +550,20 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
             >
               {saving
                 ? 'Сохраняем…'
-                : editing
-                  ? 'Сохранить изменения'
-                  : 'Опубликовать в свод'}
+                : draft
+                  ? 'Сохранить черновик'
+                  : editing
+                    ? 'Сохранить изменения'
+                    : 'Опубликовать в свод'}
             </button>
             {published ? (
               <span className="editor-actions__success">
-                {editing ? '✓ Изменения сохранены' : '✓ Статья в своде'} —{' '}
-                <Link to={`/article/${publishedSlug}`}>открыть</Link>
+                {draft
+                  ? '✓ Черновик сохранён'
+                  : editing
+                    ? '✓ Изменения сохранены'
+                    : '✓ Статья в своде'}{' '}
+                — <Link to={`/article/${publishedSlug}`}>открыть</Link>
               </span>
             ) : null}
             {saveError ? <span className="editor-actions__error">{saveError}</span> : null}
@@ -607,6 +628,7 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
                   <span className="editor-article-item__title">{a.title}</span>
                   <span className="editor-article-item__cat">
                     {a.subcategory ? `${a.category} · ${a.subcategory}` : a.category}
+                    {a.draft ? ' · черновик' : ''}
                     {a.userCreated ? ' · новая' : ''}
                   </span>
                 </div>

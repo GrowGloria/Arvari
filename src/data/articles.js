@@ -85,6 +85,7 @@ export function articleFromDraft(draft, slugOverride) {
     lead: excerpt || undefined,
     markdown: (draft.body || '').trim(),
     infobox: facts.length ? { image: draft.cover || undefined, rows: facts } : undefined,
+    draft: !!draft.draft,
     userCreated: true,
   };
 }
@@ -101,6 +102,7 @@ export function articleToDraft(article) {
     coverPosition: article.cover?.position || '',
     facts: facts.length ? facts : [{ label: '', value: '' }],
     body: article.markdown || blocksToMarkdown(article.blocks) || '',
+    draft: !!article.draft,
   };
 }
 

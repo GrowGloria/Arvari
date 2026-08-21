@@ -9,8 +9,10 @@ import {
 } from 'react';
 import { NEWS as DEFAULT_NEWS } from '../data/home';
 import { EPOCHS as DEFAULT_EPOCHS } from '../data/chronology';
+import { AUTH_EVENT } from '../lib/auth';
 import {
   loadContent,
+  loadArticles,
   createArticle,
   updateArticle,
   removeArticle,
@@ -61,6 +63,17 @@ export function ContentProvider({ children }) {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  // Вход/выход Мастера меняет видимость черновиков — перечитываем список статей.
+  useEffect(() => {
+    function onAuth() {
+      loadArticles()
+        .then(setArticles)
+        .catch(() => {});
+    }
+    window.addEventListener(AUTH_EVENT, onAuth);
+    return () => window.removeEventListener(AUTH_EVENT, onAuth);
   }, []);
 
   // Дебаунс-сохранение целиковых списков. Первый прогон после загрузки

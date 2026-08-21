@@ -103,17 +103,29 @@ api.MapPost("/auth/login", async (HttpRequest req) =>
 });
 
 // ---- Статьи ----
-api.MapGet("/articles", async (AppDb db) =>
+api.MapGet("/articles", async (HttpRequest req, AppDb db) =>
 {
+    // Черновики (draft:true) видит только Мастер — игрокам их не отдаём.
+    var master = auth.IsMaster(req);
     var rows = await db.Articles.OrderByDescending(a => a.CreatedAt).ToListAsync();
-    var arr = new JsonArray(rows.Select(r => JsonNode.Parse(r.Json)).ToArray());
-    return Results.Json(arr);
+    var nodes = new List<JsonNode?>();
+    foreach (var r in rows)
+    {
+        var node = JsonNode.Parse(r.Json);
+        var isDraft = (bool?)node?["draft"] ?? false;
+        if (master || !isDraft) nodes.Add(node);
+    }
+    return Results.Json(new JsonArray(nodes.ToArray()));
 });
 
-api.MapGet("/articles/{slug}", async (string slug, AppDb db) =>
+api.MapGet("/articles/{slug}", async (string slug, HttpRequest req, AppDb db) =>
 {
     var row = await db.Articles.FindAsync(slug);
-    return row is null ? Results.NotFound() : Results.Json(JsonNode.Parse(row.Json));
+    if (row is null) return Results.NotFound();
+    var node = JsonNode.Parse(row.Json)!;
+    // Черновик отдаём как «не найдено», если запросил не Мастер.
+    if (((bool?)node["draft"] ?? false) && !auth.IsMaster(req)) return Results.NotFound();
+    return Results.Json(node);
 });
 
 api.MapPost("/articles", async (HttpRequest req, AppDb db) =>
@@ -128,6 +140,7 @@ api.MapPost("/articles", async (HttpRequest req, AppDb db) =>
     body["date"] = DateTime.UtcNow.ToString("yyyy-MM-dd");
     body["views"] = 0;
     body["edits"] = 1;
+    body["draft"] = ((bool?)body["draft"]) ?? false;
 
     db.Articles.Add(new ArticleRow { Slug = slug, Json = body.ToJsonString() });
     await db.SaveChangesAsync();
@@ -148,6 +161,7 @@ api.MapPut("/articles/{slug}", async (string slug, HttpRequest req, AppDb db) =>
     body["date"] = prev["date"]?.DeepClone();
     body["views"] = prev["views"]?.DeepClone() ?? 0;
     body["edits"] = ((int?)prev["edits"] ?? 1) + 1;
+    body["draft"] = ((bool?)body["draft"]) ?? ((bool?)prev["draft"]) ?? false;
 
     row.Json = body.ToJsonString();
     await db.SaveChangesAsync();

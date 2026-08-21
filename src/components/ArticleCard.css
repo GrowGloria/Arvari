@@ -27,6 +27,20 @@
   border-radius: var(--radius-badge);
 }
 
+.article-card__draft {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-family: var(--font-heading);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  background: var(--color-gold);
+  color: #2b1e12;
+  padding: 3px 8px;
+  border-radius: var(--radius-badge);
+}
+
 .article-card__body {
   padding: 14px 16px 18px;
 }

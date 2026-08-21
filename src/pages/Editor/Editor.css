@@ -663,6 +663,22 @@
   flex-wrap: wrap;
 }
 
+.editor-draft-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--color-text-secondary-2);
+  cursor: pointer;
+  user-select: none;
+}
+
+.editor-draft-toggle input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
 .editor-actions__publish,
 .editor-actions__draft {
   font-family: var(--font-heading);

@@ -31,6 +31,20 @@
   padding-bottom: 0;
 }
 
+.article-draft-wrap {
+  padding-top: 12px;
+}
+
+.article-draft-note {
+  padding: 10px 16px;
+  background: var(--color-dark-surface);
+  color: var(--color-gold);
+  border-radius: var(--radius-control);
+  font-family: var(--font-heading);
+  font-size: 13px;
+  letter-spacing: 0.3px;
+}
+
 .article-hero {
   height: 260px;
   border-radius: var(--radius-hero);
@@ -484,6 +498,7 @@
   .article-breadcrumb,
   .article-hero-wrap,
   .article-title-block,
+  .article-draft-wrap,
   .article-main {
     padding-left: 16px;
     padding-right: 16px;

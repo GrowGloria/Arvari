@@ -70,6 +70,15 @@ export default function Article() {
         / <span className="article-breadcrumb__current">{article.title}</span>
       </div>
 
+      {article.draft ? (
+        <div className="container article-draft-wrap">
+          <div className="article-draft-note">
+            ✎ Черновик — виден только вам. Игроки его не увидят, пока не снять отметку
+            «Черновик» в редакторе.
+          </div>
+        </div>
+      ) : null}
+
       {article.heroCaption ? (
         <div className="container article-hero-wrap">
           <div
