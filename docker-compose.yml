@@ -1,9 +1,10 @@
 # Запуск «Арвари» на своём сервере (Ubuntu + Docker).
 #
-#   docker compose up -d --build
+#   docker compose up -d --build app
 #
 # Переменные берутся из файла .env рядом (см. deploy/.env.example).
-# Публичный доступ даёт cloudflared — туннель до Cloudflare, без проброса портов.
+# Наружу приложение выпускает Tailscale Funnel (+ Cloudflare Worker для
+# красивого домена). Сам контейнер слушает только localhost.
 
 services:
   app:
@@ -12,21 +13,13 @@ services:
     environment:
       - ARVARI_PASSPHRASE=${ARVARI_PASSPHRASE}
       - ARVARI_SECRET=${ARVARI_SECRET}
+      # Публичный адрес — для абсолютных ссылок/картинок в превью (OG).
+      - ARVARI_PUBLIC_URL=${ARVARI_PUBLIC_URL}
     volumes:
       - arvari-data:/data
-    # Локальная проверка на самом сервере: http://localhost:8080
-    # (наружу не открыт — в интернет пускает только туннель).
+    # Только локально — в интернет пускает Tailscale Funnel, не порт наружу.
     ports:
       - "127.0.0.1:8080:8080"
-
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    restart: unless-stopped
-    command: tunnel run
-    environment:
-      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
-    depends_on:
-      - app
 
 volumes:
   arvari-data:

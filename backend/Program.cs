@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Arvari.Api;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -287,6 +288,33 @@ api.MapPost("/uploads", async (HttpRequest req) =>
     return Results.Ok(new { url });
 });
 
+// Превью ссылок: прямой заход/краулер на /article/{slug} получает index.html
+// с OG-мета конкретной статьи (в Telegram/Discord развернётся карточка с
+// названием, описанием и обложкой). Клиентская навигация внутри SPA сюда не
+// попадает — это только самый первый заход по ссылке.
+var publicBase = (Environment.GetEnvironmentVariable("ARVARI_PUBLIC_URL") ?? "").TrimEnd('/');
+var webRoot = app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+var indexHtmlPath = Path.Combine(webRoot, "index.html");
+app.MapGet("/article/{slug}", async (string slug, HttpRequest req, AppDb db) =>
+{
+    if (!File.Exists(indexHtmlPath)) return Results.NotFound();
+    var html = await File.ReadAllTextAsync(indexHtmlPath);
+    var row = await db.Articles.FindAsync(slug);
+    if (row is not null)
+    {
+        var node = JsonNode.Parse(row.Json)!;
+        // Черновик в превью не раскрываем (его и так не видно игрокам).
+        if (!((bool?)node["draft"] ?? false))
+        {
+            var title = ((string?)node["title"] ?? "Арвари").Trim();
+            var desc = OgText((string?)node["excerpt"] ?? (string?)node["lead"] ?? "");
+            var image = AbsUrl(publicBase, req, (string?)(node["cover"]?["image"]) ?? (string?)(node["infobox"]?["image"]));
+            html = InjectOg(html, $"{title} — Арвари", desc, image, AbsUrl(publicBase, req, $"/article/{slug}"));
+        }
+    }
+    return Results.Content(html, "text/html; charset=utf-8");
+});
+
 // Клиентские маршруты сайта (/catalog, /article/…) отдаём index.html — роутер
 // разберётся уже в браузере. Стоит после /api, поэтому ручки в приоритете.
 app.MapFallbackToFile("index.html");
@@ -302,3 +330,51 @@ static object ToDto(SuggestionRow s) => new
     createdAt = s.CreatedAt.ToString("o"),
     read = s.Read,
 };
+
+// ---- OG-превью: сборка мета-тегов ----
+
+// Абсолютный URL. Если задан ARVARI_PUBLIC_URL (напр. https://arvariwiki.ru) —
+// берём его; иначе схему/домен запроса (за прокси может быть …ts.net).
+static string AbsUrl(string publicBase, HttpRequest req, string? path)
+{
+    if (string.IsNullOrEmpty(path)) return "";
+    if (path.StartsWith("http://") || path.StartsWith("https://")) return path;
+    var b = !string.IsNullOrEmpty(publicBase) ? publicBase : $"{req.Scheme}://{req.Host}";
+    return b + (path.StartsWith("/") ? path : "/" + path);
+}
+
+static string HtmlEsc(string? s) => (s ?? "")
+    .Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;")
+    .Replace("\"", "&quot;").Replace("'", "&#39;");
+
+static string OgText(string? s)
+{
+    if (string.IsNullOrEmpty(s)) return "";
+    var t = Regex.Replace(s, "\\s+", " ").Trim();
+    return t.Length > 200 ? t[..197] + "…" : t;
+}
+
+static string InjectOg(string html, string title, string desc, string image, string url)
+{
+    var og = "<!-- OG -->"
+        + "<meta property=\"og:type\" content=\"article\" />"
+        + "<meta property=\"og:site_name\" content=\"Арвари\" />"
+        + $"<meta property=\"og:title\" content=\"{HtmlEsc(title)}\" />"
+        + $"<meta property=\"og:description\" content=\"{HtmlEsc(desc)}\" />"
+        + $"<meta property=\"og:url\" content=\"{HtmlEsc(url)}\" />";
+    if (!string.IsNullOrEmpty(image))
+        og += $"<meta property=\"og:image\" content=\"{HtmlEsc(image)}\" />"
+            + "<meta name=\"twitter:card\" content=\"summary_large_image\" />"
+            + $"<meta name=\"twitter:image\" content=\"{HtmlEsc(image)}\" />";
+    else
+        og += "<meta name=\"twitter:card\" content=\"summary\" />";
+    og += $"<meta name=\"twitter:title\" content=\"{HtmlEsc(title)}\" />"
+        + $"<meta name=\"twitter:description\" content=\"{HtmlEsc(desc)}\" />"
+        + "<!-- /OG -->";
+
+    // MatchEvaluator (а не строка-замена) — чтобы символы $ в тексте статьи
+    // не воспринимались как подстановки регэкспа.
+    html = Regex.Replace(html, "<!-- OG -->.*?<!-- /OG -->", _ => og, RegexOptions.Singleline);
+    html = Regex.Replace(html, "<title>.*?</title>", _ => $"<title>{HtmlEsc(title)}</title>", RegexOptions.Singleline);
+    return html;
+}
