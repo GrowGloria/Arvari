@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import Logo from './Logo';
 import SearchBar from './SearchBar';
@@ -15,6 +16,12 @@ export default function Header({ showSearch = false, searchPlaceholder, rightSlo
   const master = useIsMaster();
   const onArticlePage = location.pathname.startsWith('/article/');
   const hidden = useHideOnScroll();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Закрываем мобильное меню при переходе на другую страницу.
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
 
   function goToRandomArticle() {
     const article = getRandomArticle(articles);
@@ -26,7 +33,10 @@ export default function Header({ showSearch = false, searchPlaceholder, rightSlo
     <header className={`site-header${hidden ? ' site-header--hidden' : ''}`}>
       <div className="container site-header__inner">
         <Logo />
-        <nav className="site-header__nav">
+        <nav
+          className={`site-header__nav${menuOpen ? ' site-header__nav--open' : ''}`}
+          onClick={() => setMenuOpen(false)}
+        >
           <NavLink to="/" end className="site-header__link">
             Главная
           </NavLink>
@@ -60,6 +70,15 @@ export default function Header({ showSearch = false, searchPlaceholder, rightSlo
           <div className="site-header__spacer" />
         )}
         <ThemeToggle />
+        <button
+          type="button"
+          className="site-header__burger"
+          aria-label={menuOpen ? 'Закрыть меню' : 'Меню'}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((o) => !o)}
+        >
+          {menuOpen ? '✕' : '☰'}
+        </button>
         {rightSlot}
       </div>
     </header>

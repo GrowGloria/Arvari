@@ -50,6 +50,28 @@
   flex: 1;
 }
 
+/* Кнопка-бургер: скрыта на десктопе, показывается на узких экранах. */
+.site-header__burger {
+  display: none;
+  width: 40px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  color: var(--color-text-secondary-2);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.site-header__burger:hover {
+  border-color: var(--color-border-accent);
+  color: var(--color-primary);
+}
+
 @media (max-width: 720px) {
   /* На телефоне шапка уезжает вверх при прокрутке вниз и
      возвращается при прокрутке вверх (класс ставит useHideOnScroll). */
@@ -59,21 +81,31 @@
 
   .site-header__inner {
     flex-wrap: wrap;
-    gap: 12px 18px;
-    padding-top: 12px;
-    padding-bottom: 12px;
+    gap: 10px 12px;
+    padding: 10px 16px;
   }
 
-  .site-header__nav {
-    order: 3;
-    flex-basis: 100%;
-    flex-wrap: wrap;
-    gap: 16px 20px;
-    font-size: 13px;
+  /* Логотип толкает контролы вправо группой; подпись прячем ради компактности. */
+  .logo {
+    margin-right: auto;
+  }
+
+  .logo__tagline {
+    display: none;
+  }
+
+  .site-header__inner .theme-toggle {
+    order: 1;
+    margin-left: 0;
+  }
+
+  .site-header__burger {
+    display: inline-flex;
+    order: 2;
   }
 
   .searchbar--compact {
-    order: 4;
+    order: 3;
     flex-basis: 100%;
   }
 
@@ -81,8 +113,35 @@
     display: none;
   }
 
-  /* «⚜ Мастер Арвари» + Выйти в редакторе — рядом с логотипом в первом ряду */
   .editor-header-user {
-    margin-left: auto;
+    order: 4;
+    margin-left: 0;
+  }
+
+  /* Навигация уходит в выпадающую панель под шапкой, по кнопке-бургеру. */
+  .site-header__nav {
+    order: 5;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 25;
+    display: none;
+    flex-direction: column;
+    gap: 0;
+    padding: 4px 20px 12px;
+    background: var(--color-surface);
+    border-bottom: 2px solid var(--color-border-accent);
+    box-shadow: var(--shadow-header);
+  }
+
+  .site-header__nav--open {
+    display: flex;
+  }
+
+  .site-header__nav .site-header__link {
+    padding: 12px 2px;
+    font-size: 15px;
+    border-bottom: 1px solid var(--color-divider);
   }
 }
