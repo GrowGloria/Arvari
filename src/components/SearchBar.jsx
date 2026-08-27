@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useContent } from '../store/contentStore';
+import { logEvent } from '../api/analytics';
 import './SearchBar.css';
 
 const MAX_SUGGEST = 7;
@@ -32,6 +33,7 @@ export default function SearchBar({ variant = 'compact', placeholder = 'Иска
   const showList = open && suggestions.length > 0;
 
   function goSearch(q) {
+    if (q) logEvent('search', q);
     navigate(q ? `/catalog?q=${encodeURIComponent(q)}` : '/catalog');
     setOpen(false);
   }

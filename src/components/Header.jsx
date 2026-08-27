@@ -48,6 +48,11 @@ export default function Header({ showSearch = false, searchPlaceholder, rightSlo
               Редактор ⚜
             </NavLink>
           ) : null}
+          {master ? (
+            <NavLink to="/stats" className="site-header__link">
+              Аналитика
+            </NavLink>
+          ) : null}
         </nav>
         {showSearch ? (
           <SearchBar variant="compact" placeholder={searchPlaceholder} />

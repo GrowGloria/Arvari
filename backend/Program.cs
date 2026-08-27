@@ -50,6 +50,12 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDb>();
     db.Database.EnsureCreated();
+    // Таблица статистики: EnsureCreated не добавляет таблицы в уже существующую
+    // базу, поэтому создаём вручную (идемпотентно).
+    db.Database.ExecuteSqlRaw(
+        "CREATE TABLE IF NOT EXISTS Events (Id INTEGER PRIMARY KEY AUTOINCREMENT, Type TEXT NOT NULL, Target TEXT, Visitor TEXT, CreatedAt TEXT NOT NULL)");
+    db.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS IX_Events_CreatedAt ON Events (CreatedAt)");
+    db.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS IX_Events_Type ON Events (Type)");
     Seed.Chronology(db, app.Environment.ContentRootPath);
 }
 
@@ -183,7 +189,7 @@ api.MapDelete("/articles/{slug}", async (string slug, HttpRequest req, AppDb db)
 
 // Просмотр статьи: публичная ручка, любой заход увеличивает счётчик на 1.
 // Счётчик лежит внутри JSON статьи (поле views) — правим его на месте.
-api.MapPost("/articles/{slug}/view", async (string slug, AppDb db) =>
+api.MapPost("/articles/{slug}/view", async (string slug, HttpRequest req, AppDb db) =>
 {
     var row = await db.Articles.FindAsync(slug);
     if (row is null) return Results.NotFound();
@@ -191,8 +197,88 @@ api.MapPost("/articles/{slug}/view", async (string slug, AppDb db) =>
     var views = ((int?)obj["views"] ?? 0) + 1;
     obj["views"] = views;
     row.Json = obj.ToJsonString();
+
+    // Заодно пишем событие просмотра в лог статистики (с анонимным id устройства).
+    string? visitor = null;
+    try { var b = await req.ReadFromJsonAsync<JsonObject>(); visitor = (string?)b?["visitor"]; } catch { /* тела может не быть */ }
+    db.Events.Add(new EventRow { Type = "view", Target = slug, Visitor = Clip(visitor, 64) });
+
     await db.SaveChangesAsync();
     return Results.Ok(new { views });
+});
+
+// ---- Статистика: приём событий (публично) и сводка (Мастер) ----
+api.MapPost("/events", async (HttpRequest req, AppDb db) =>
+{
+    var body = await req.ReadFromJsonAsync<JsonObject>();
+    var type = ((string?)body?["type"] ?? "").Trim();
+    if (type is not ("search" or "visit" or "view")) return Results.BadRequest();
+    var target = (string?)body?["key"] ?? (string?)body?["target"];
+    if (type == "search") target = (target ?? "").Trim().ToLowerInvariant();
+    target = Clip(string.IsNullOrEmpty(target) ? null : target, 200);
+    db.Events.Add(new EventRow { Type = type, Target = target, Visitor = Clip((string?)body?["visitor"], 64) });
+    await db.SaveChangesAsync();
+    return Results.NoContent();
+});
+
+api.MapGet("/stats", async (HttpRequest req, AppDb db) =>
+{
+    if (!auth.IsMaster(req)) return Deny();
+    var now = DateTime.UtcNow;
+    var since30 = now.AddDays(-30);
+    var since7 = now.AddDays(-7);
+
+    var totalViews = await db.Events.CountAsync(e => e.Type == "view");
+    var totalSearches = await db.Events.CountAsync(e => e.Type == "search");
+    var totalVisits = await db.Events.CountAsync(e => e.Type == "visit");
+    var uniqueVisitors = await db.Events
+        .Where(e => e.Type == "visit" && e.Visitor != null)
+        .Select(e => e.Visitor).Distinct().CountAsync();
+
+    // Последние 30 дней грузим в память и считаем всё локально — объём маленький.
+    var recent = await db.Events.Where(e => e.CreatedAt >= since30)
+        .OrderByDescending(e => e.CreatedAt).ToListAsync();
+    var views = recent.Where(e => e.Type == "view").ToList();
+    var searches = recent.Where(e => e.Type == "search").ToList();
+    var visits = recent.Where(e => e.Type == "visit").ToList();
+
+    static string Day(DateTime d) => d.ToString("yyyy-MM-dd");
+    var last14 = Enumerable.Range(0, 14).Select(i => Day(now.AddDays(-13 + i))).ToList();
+
+    return Results.Json(new
+    {
+        windowDays = 30,
+        views = new
+        {
+            total = totalViews,
+            last7 = views.Count(e => e.CreatedAt >= since7),
+            perDay = last14.Select(d => new { date = d, count = views.Count(e => Day(e.CreatedAt) == d) }),
+            top = views.Where(e => e.Target != null).GroupBy(e => e.Target!)
+                .Select(g => new { slug = g.Key, count = g.Count() })
+                .OrderByDescending(x => x.count).Take(10),
+        },
+        searches = new
+        {
+            total = totalSearches,
+            last7 = searches.Count(e => e.CreatedAt >= since7),
+            top = searches.Where(e => !string.IsNullOrWhiteSpace(e.Target)).GroupBy(e => e.Target!)
+                .Select(g => new { query = g.Key, count = g.Count() })
+                .OrderByDescending(x => x.count).Take(15),
+            recent = searches.Take(25).Select(e => new { query = e.Target, at = e.CreatedAt.ToString("o") }),
+        },
+        visits = new
+        {
+            total = totalVisits,
+            last7 = visits.Count(e => e.CreatedAt >= since7),
+            uniqueTotal = uniqueVisitors,
+            perDay = last14.Select(d => new
+            {
+                date = d,
+                count = visits.Count(e => Day(e.CreatedAt) == d),
+                unique = visits.Where(e => Day(e.CreatedAt) == d).Select(e => e.Visitor).Distinct().Count(),
+            }),
+        },
+    });
 });
 
 // ---- Вестники и хронология (целиковые списки) ----
@@ -330,6 +416,10 @@ static object ToDto(SuggestionRow s) => new
     createdAt = s.CreatedAt.ToString("o"),
     read = s.Read,
 };
+
+// Обрезает строку до max символов (и пустую превращает в null) — для лога.
+static string? Clip(string? s, int max) =>
+    string.IsNullOrEmpty(s) ? null : (s.Length > max ? s[..max] : s);
 
 // ---- OG-превью: сборка мета-тегов ----
 

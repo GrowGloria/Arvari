@@ -10,6 +10,7 @@ import {
 import { NEWS as DEFAULT_NEWS } from '../data/home';
 import { EPOCHS as DEFAULT_EPOCHS } from '../data/chronology';
 import { AUTH_EVENT } from '../lib/auth';
+import { logEvent } from '../api/analytics';
 import {
   loadContent,
   loadArticles,
@@ -99,6 +100,11 @@ export function ContentProvider({ children }) {
   useEffect(() => {
     if (hydrated) updateCacheData({ articles, news, epochs });
   }, [articles, news, epochs, hydrated]);
+
+  // Одно событие «визит» на загрузку приложения (для статистики посещаемости).
+  useEffect(() => {
+    logEvent('visit');
+  }, []);
 
   // Вход/выход Мастера меняет видимость черновиков — перечитываем список статей.
   useEffect(() => {

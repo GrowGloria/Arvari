@@ -1,4 +1,5 @@
 import { isMockMode, readLocal, writeLocal, request } from './client';
+import { visitorId } from './analytics';
 import { NEWS as DEFAULT_NEWS } from '../data/home';
 import { EPOCHS as DEFAULT_EPOCHS } from '../data/chronology';
 
@@ -122,7 +123,10 @@ export async function registerView(slug) {
     writeLocal(ARTICLES_KEY, next);
     return { views };
   }
-  return request(`/articles/${encodeURIComponent(slug)}/view`, { method: 'POST' });
+  return request(`/articles/${encodeURIComponent(slug)}/view`, {
+    method: 'POST',
+    body: { visitor: visitorId() },
+  });
 }
 
 /* ---- Вестники и хронология (целиковый список) ---- */
