@@ -652,6 +652,64 @@
   color: var(--color-text-muted-3);
 }
 
+/* Автодополнение вики-ссылок [[…]] в редакторе */
+.editor-body-wrap {
+  position: relative;
+}
+
+.editor-wiki-suggest {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 40;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-modal);
+}
+
+.editor-wiki-suggest__hint {
+  padding: 8px 12px;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.editor-wiki-suggest__item {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 12px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--color-divider);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: var(--color-text);
+}
+
+.editor-wiki-suggest__item:last-child {
+  border-bottom: none;
+}
+
+.editor-wiki-suggest__item--active {
+  background: var(--color-control-bg);
+}
+
+.editor-wiki-suggest__cat {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
 .editor-body__hint {
   font-style: italic;
 }

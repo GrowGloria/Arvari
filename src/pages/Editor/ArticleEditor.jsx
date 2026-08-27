@@ -40,6 +40,7 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
   const bodyRef = useRef(null);
   const bodyImageInputRef = useRef(null);
   const [imgUploading, setImgUploading] = useState(false);
+  const [wiki, setWiki] = useState(null); // автодополнение [[ссылок]]: { open, items, active }
   const [showPreview, setShowPreview] = useState(false);
   const [imported, setImported] = useState(null);
   const [dragOver, setDragOver] = useState(false);
@@ -247,6 +248,75 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
       ta.focus();
       ta.setSelectionRange(caretStart, caretEnd);
     });
+  }
+
+  // ---- Автодополнение вики-ссылок [[…]] ----
+
+  // Если курсор внутри незакрытой [[…, возвращает позицию [[ и введённый запрос.
+  function wikiContext(text, caret) {
+    const before = text.slice(0, caret);
+    const open = before.lastIndexOf('[[');
+    if (open === -1) return null;
+    if (open >= 1 && before[open - 1] === '!') return null; // ![[ — это картинка, не ссылка
+    const between = before.slice(open + 2);
+    if (/[\]\n|[]/.test(between)) return null; // уже закрыто/алиас/другая скобка
+    return { open, query: between };
+  }
+
+  function wikiItems(query) {
+    const s = query.trim().toLowerCase();
+    const sorted = [...articles].sort((a, b) => a.title.localeCompare(b.title, 'ru'));
+    if (!s) return sorted.slice(0, 8);
+    const starts = [];
+    const contains = [];
+    for (const a of sorted) {
+      const t = (a.title || '').toLowerCase();
+      if (t.startsWith(s)) starts.push(a);
+      else if (t.includes(s)) contains.push(a);
+    }
+    return [...starts, ...contains].slice(0, 8);
+  }
+
+  function refreshWiki(text, caret) {
+    const ctx = wikiContext(text, caret);
+    if (!ctx) return setWiki(null);
+    const items = wikiItems(ctx.query);
+    if (!items.length) return setWiki(null);
+    setWiki({ open: ctx.open, items, active: 0 });
+  }
+
+  function insertWiki(a) {
+    const ta = bodyRef.current;
+    if (!ta || !wiki || !a) return;
+    const text = ta.value;
+    const caret = ta.selectionStart;
+    const end = text.slice(caret, caret + 2) === ']]' ? caret + 2 : caret;
+    const replacement = `[[${a.title}]]`;
+    setBody(text.slice(0, wiki.open) + replacement + text.slice(end));
+    markDirty();
+    setWiki(null);
+    requestAnimationFrame(() => {
+      ta.focus();
+      const pos = wiki.open + replacement.length;
+      ta.setSelectionRange(pos, pos);
+    });
+  }
+
+  function onBodyKeyDown(e) {
+    if (!wiki) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setWiki((w) => ({ ...w, active: Math.min(w.active + 1, w.items.length - 1) }));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setWiki((w) => ({ ...w, active: Math.max(w.active - 1, 0) }));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      insertWiki(wiki.items[wiki.active]);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setWiki(null);
+    }
   }
 
   const wordCount = useMemo(() => (body.trim() ? body.trim().split(/\s+/).length : 0), [body]);
@@ -513,16 +583,43 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
                 )}
               </div>
             ) : (
-              <textarea
-                ref={bodyRef}
-                className="editor-body"
-                value={body}
-                onChange={(e) => {
-                  setBody(e.target.value);
-                  markDirty();
-                }}
-                placeholder="Текст статьи в разметке Obsidian. Ссылки [[Название]] ведут на другие статьи, ![[файл.png]] вставляет изображение…"
-              />
+              <div className="editor-body-wrap">
+                <textarea
+                  ref={bodyRef}
+                  className="editor-body"
+                  value={body}
+                  onChange={(e) => {
+                    setBody(e.target.value);
+                    markDirty();
+                    refreshWiki(e.target.value, e.target.selectionStart);
+                  }}
+                  onKeyDown={onBodyKeyDown}
+                  onKeyUp={(e) => {
+                    if (['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key) && wiki) return;
+                    refreshWiki(e.target.value, e.target.selectionStart);
+                  }}
+                  onClick={(e) => refreshWiki(e.target.value, e.target.selectionStart)}
+                  onBlur={() => setTimeout(() => setWiki(null), 150)}
+                  placeholder="Текст статьи в разметке Obsidian. Ссылки [[Название]] ведут на другие статьи, ![[файл.png]] вставляет изображение…"
+                />
+                {wiki ? (
+                  <div className="editor-wiki-suggest" onMouseDown={(e) => e.preventDefault()}>
+                    <div className="editor-wiki-suggest__hint">Ссылка на статью:</div>
+                    {wiki.items.map((a, i) => (
+                      <button
+                        type="button"
+                        key={a.slug}
+                        className={`editor-wiki-suggest__item${i === wiki.active ? ' editor-wiki-suggest__item--active' : ''}`}
+                        onClick={() => insertWiki(a)}
+                        onMouseEnter={() => setWiki((w) => ({ ...w, active: i }))}
+                      >
+                        <span>{a.title}</span>
+                        <span className="editor-wiki-suggest__cat">{a.category}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             )}
             <div className="editor-body__footer">
               <span>{wordCount} слов</span>
