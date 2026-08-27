@@ -5,12 +5,14 @@ import ThemeToggle from './ThemeToggle';
 import { getRandomArticle } from '../data/articles';
 import { useContent } from '../store/contentStore';
 import { useHideOnScroll } from '../lib/useHideOnScroll';
+import { useIsMaster } from '../lib/auth';
 import './Header.css';
 
 export default function Header({ showSearch = false, searchPlaceholder, rightSlot = null }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { articles } = useContent();
+  const master = useIsMaster();
   const onArticlePage = location.pathname.startsWith('/article/');
   const hidden = useHideOnScroll();
 
@@ -41,9 +43,11 @@ export default function Header({ showSearch = false, searchPlaceholder, rightSlo
           <NavLink to="/chronology" className="site-header__link">
             Хронология
           </NavLink>
-          <NavLink to="/editor" className="site-header__link">
-            Редактор ⚜
-          </NavLink>
+          {master ? (
+            <NavLink to="/editor" className="site-header__link">
+              Редактор ⚜
+            </NavLink>
+          ) : null}
         </nav>
         {showSearch ? (
           <SearchBar variant="compact" placeholder={searchPlaceholder} />

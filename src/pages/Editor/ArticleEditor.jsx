@@ -20,6 +20,7 @@ const TOOLBAR = [
   { label: 'Изображение', title: 'Вставить изображение из архива', wrap: ['![[', ']]'], placeholder: 'файл.png' },
   { label: 'Цитата', title: 'Цитата', line: '> ' },
   { label: 'Список', title: 'Пункт списка', line: '- ' },
+  { label: '─', title: 'Горизонтальная линия (разделитель)', snippet: '\n\n---\n\n' },
 ];
 
 const ARCHIVE_IMAGES = [
@@ -207,6 +208,11 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
 
   // Применяет форматирование к выделению в textarea тела статьи.
   function applyFormat(btn) {
+    if (btn.snippet) {
+      insertAtCursor(btn.snippet);
+      markDirty();
+      return;
+    }
     const ta = bodyRef.current;
     if (!ta) return;
     const start = ta.selectionStart;

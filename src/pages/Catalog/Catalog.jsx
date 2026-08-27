@@ -16,6 +16,11 @@ const SORTS = [
   { key: 'popularity', label: 'По популярности' },
 ];
 
+// Виртуальный раздел «Все статьи» — первым в списке и по умолчанию при заходе
+// в каталог. Показывает все статьи (по умолчанию в порядке выхода, по дате).
+const ALL_CATEGORY = { slug: 'vse', name: 'Все статьи', all: true };
+const CATALOG_SECTIONS = [ALL_CATEGORY, ...CATEGORIES];
+
 export default function Catalog() {
   const { categorySlug } = useParams();
   const [searchParams] = useSearchParams();
@@ -26,7 +31,7 @@ export default function Catalog() {
   const [expanded, setExpanded] = useState({});
   const { articles, loading, error } = useContent();
 
-  const activeCategory = CATEGORIES.find((c) => c.slug === categorySlug) || CATEGORIES[0];
+  const activeCategory = CATALOG_SECTIONS.find((c) => c.slug === categorySlug) || ALL_CATEGORY;
   const activeSubcat =
     (!query && activeCategory.subcats?.find((s) => slugify(s) === subSlug)) || null;
 
@@ -39,6 +44,7 @@ export default function Catalog() {
 
   const baseList = useMemo(() => {
     if (query) return searchArticles(articles, query);
+    if (activeCategory.all) return articles;
     const list = getArticlesByCategory(articles, activeCategory.name);
     if (activeSubcat) return list.filter((a) => a.subcategory === activeSubcat);
     return list;
@@ -49,6 +55,11 @@ export default function Catalog() {
   useEffect(() => {
     setPage(1);
   }, [query, activeCategory.slug, activeSubcat]);
+
+  // «Все статьи» — по умолчанию в порядке выхода (по дате); разделы — по алфавиту.
+  useEffect(() => {
+    setSortBy(activeCategory.all ? 'date' : 'alpha');
+  }, [activeCategory.slug, activeCategory.all]);
 
   useEffect(() => {
     setExpanded((prev) => ({ ...prev, [activeCategory.slug]: true }));
@@ -75,14 +86,14 @@ export default function Catalog() {
       <div className="container catalog-title">
         <h1>Каталог статей</h1>
         <div className="catalog-title__subtitle">
-          {totalCount} статей, распределённых по девяти разделам свода
+          {totalCount} статей в {CATEGORIES.length} разделах свода
         </div>
       </div>
 
       <main className="container catalog-main">
         <aside className="catalog-sidebar">
           <div className="catalog-sidebar__label">Разделы</div>
-          {CATEGORIES.map((c) => {
+          {CATALOG_SECTIONS.map((c) => {
             const isActive = !query && c.slug === activeCategory.slug;
             const isExpanded = !!expanded[c.slug];
             return (
@@ -94,7 +105,9 @@ export default function Catalog() {
                     onClick={() => setPage(1)}
                   >
                     <span>{c.name}</span>
-                    <span className="catalog-sidebar__count">{counts.get(c.name) || 0}</span>
+                    <span className="catalog-sidebar__count">
+                      {c.all ? totalCount : counts.get(c.name) || 0}
+                    </span>
                   </Link>
                   {c.subcats ? (
                     <button
@@ -153,7 +166,7 @@ export default function Catalog() {
                 <>
                   {activeCategory.name}{' '}
                   <span className="catalog-filterbar__count">
-                    — {counts.get(activeCategory.name) || 0} статей
+                    — {activeCategory.all ? totalCount : counts.get(activeCategory.name) || 0} статей
                   </span>
                 </>
               )}
