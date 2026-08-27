@@ -14,6 +14,46 @@ const ARTICLES_KEY = 'arvari_articles';
 const NEWS_KEY = 'arvari_news';
 const CHRONO_KEY = 'arvari_chronology';
 
+/* ---- Кэш свода в браузере (боевой режим) ----
+ * Держит последнюю копию { articles, news, epochs } в localStorage, чтобы при
+ * открытии показать контент мгновенно (поиск работает сразу, даже без сети), а
+ * сеть дёргать в фоне. Если кэш свежий (< TTL) — запрос к серверу пропускаем,
+ * это снимает лишнюю нагрузку с БД. Поле at — время последней загрузки с сервера.
+ */
+const CACHE_KEY = 'arvari_content_cache_v1';
+export const CONTENT_TTL_MS = 90 * 1000;
+
+export function readContentCache() {
+  if (isMockMode) return null; // мок уже держит всё в localStorage
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    const data = raw ? JSON.parse(raw) : null;
+    return data && Array.isArray(data.articles) ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(at, articles, news, epochs) {
+  if (isMockMode) return;
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ at, articles, news, epochs }));
+  } catch {
+    /* переполнена квота — просто работаем без кэша */
+  }
+}
+
+/** Записать свежую копию с сервера (сбрасывает TTL-таймер). */
+export function markCacheFresh({ articles, news, epochs }) {
+  writeCache(Date.now(), articles, news, epochs);
+}
+
+/** Обновить данные кэша (правки Мастера), НЕ трогая TTL-таймер. */
+export function updateCacheData({ articles, news, epochs }) {
+  const cur = readContentCache();
+  writeCache(cur?.at ?? Date.now(), articles, news, epochs);
+}
+
 /** Первичная загрузка свода. */
 export async function loadContent() {
   if (isMockMode) {

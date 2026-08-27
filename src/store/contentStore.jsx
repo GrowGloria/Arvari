@@ -19,6 +19,10 @@ import {
   registerView as apiRegisterView,
   saveNews,
   saveEpochs,
+  readContentCache,
+  markCacheFresh,
+  updateCacheData,
+  CONTENT_TTL_MS,
 } from '../api/content';
 
 /**
@@ -43,6 +47,28 @@ export function ContentProvider({ children }) {
 
   useEffect(() => {
     let cancelled = false;
+
+    // 1) Мгновенно показываем последнюю копию из кэша — поиск и статьи готовы
+    //    сразу, даже пока сеть «просыпается» (например, после включения телефона).
+    const cached = readContentCache();
+    if (cached) {
+      setNews(cached.news ?? DEFAULT_NEWS);
+      setEpochs(cached.epochs ?? DEFAULT_EPOCHS);
+      setArticles(cached.articles);
+      setLoading(false);
+    }
+
+    // 2) Свежий кэш (< TTL) — к серверу не ходим, снимаем нагрузку с БД.
+    if (cached && Date.now() - cached.at < CONTENT_TTL_MS) {
+      setHydrated(true);
+      setLoading(false);
+      setError(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    // 3) Иначе тихо обновляемся с сервера в фоне.
     (async () => {
       try {
         const stored = await loadContent();
@@ -50,9 +76,11 @@ export function ContentProvider({ children }) {
         setNews(stored.news);
         setEpochs(stored.epochs);
         setArticles(stored.articles);
+        markCacheFresh(stored);
         setError(null);
       } catch (e) {
-        if (!cancelled) setError(e.message || 'Не удалось загрузить свод.');
+        // Есть кэш — переживём офлайн без ошибки; нет — показываем ошибку.
+        if (!cancelled && !cached) setError(e.message || 'Не удалось загрузить свод.');
       } finally {
         if (!cancelled) {
           setHydrated(true);
@@ -60,10 +88,17 @@ export function ContentProvider({ children }) {
         }
       }
     })();
+
     return () => {
       cancelled = true;
     };
   }, []);
+
+  // Держим кэш в согласии с состоянием (правки Мастера, счётчик просмотров),
+  // не сбрасывая TTL-таймер последней серверной загрузки.
+  useEffect(() => {
+    if (hydrated) updateCacheData({ articles, news, epochs });
+  }, [articles, news, epochs, hydrated]);
 
   // Вход/выход Мастера меняет видимость черновиков — перечитываем список статей.
   useEffect(() => {
