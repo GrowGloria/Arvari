@@ -1,4 +1,5 @@
 import { isMockMode, request } from './client';
+import { isMaster } from '../lib/auth';
 
 /**
  * Статистика: тихо (fire-and-forget) отправляем события на сервер.
@@ -22,7 +23,8 @@ export function visitorId() {
 }
 
 export function logEvent(type, key) {
-  if (isMockMode) return;
+  // Не считаем действия самого Мастера — чтобы не искажать статистику.
+  if (isMockMode || isMaster()) return;
   request('/events', { method: 'POST', body: { type, key, visitor: visitorId() } }).catch(() => {});
 }
 

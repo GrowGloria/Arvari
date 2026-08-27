@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { NEWS as DEFAULT_NEWS } from '../data/home';
 import { EPOCHS as DEFAULT_EPOCHS } from '../data/chronology';
-import { AUTH_EVENT } from '../lib/auth';
+import { AUTH_EVENT, isMaster } from '../lib/auth';
 import { logEvent } from '../api/analytics';
 import {
   loadContent,
@@ -140,8 +140,9 @@ export function ContentProvider({ children }) {
     setArticles((prev) => prev.filter((a) => a.slug !== slug));
   }, []);
 
-  /** Отметить просмотр статьи. Не критично — тихо игнорируем сбой. */
+  /** Отметить просмотр статьи. Просмотры Мастера не считаем. */
   const registerView = useCallback(async (slug) => {
+    if (isMaster()) return;
     try {
       const res = await apiRegisterView(slug);
       if (res && typeof res.views === 'number') {
