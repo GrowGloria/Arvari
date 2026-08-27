@@ -90,7 +90,8 @@
   min-width: 0;
 }
 
-.searchbar--large button {
+/* Только прямая кнопка «Искать» — не пункты выпадашки (они тоже <button>). */
+.searchbar--large > button {
   font-family: var(--font-heading);
   font-size: 14px;
   letter-spacing: 1px;
@@ -103,6 +104,6 @@
   white-space: nowrap;
 }
 
-.searchbar--large button:hover {
+.searchbar--large > button:hover {
   background: var(--color-primary-hover);
 }

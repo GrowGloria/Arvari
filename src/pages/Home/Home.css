@@ -11,16 +11,18 @@
 
 .hero {
   position: relative;
-  overflow: hidden;
   height: 440px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+/* Фон-арты клипуются здесь, а не на .hero — иначе выпадашка поиска, выходящая
+   за нижнюю границу героя, обрезалась бы. */
 .hero__bg {
   position: absolute;
   inset: 0;
+  overflow: hidden;
 }
 
 .hero__layer {
