@@ -46,6 +46,23 @@
   border-bottom-color: var(--color-primary);
 }
 
+/* Бейдж непрочитанной «предложки» на пункте «Редактор». */
+.site-header__badge {
+  display: inline-block;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 5px;
+  margin-left: 6px;
+  background: var(--color-error);
+  color: var(--color-on-dark);
+  border-radius: 9px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+  vertical-align: middle;
+}
+
 .site-header__spacer {
   flex: 1;
 }

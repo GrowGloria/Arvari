@@ -7,6 +7,7 @@ import { getRandomArticle } from '../data/articles';
 import { useContent } from '../store/contentStore';
 import { useHideOnScroll } from '../lib/useHideOnScroll';
 import { useIsMaster } from '../lib/auth';
+import { loadUnreadCount, SUGGESTIONS_EVENT } from '../api/suggestions';
 import './Header.css';
 
 export default function Header({ showSearch = false, searchPlaceholder, rightSlot = null }) {
@@ -22,6 +23,23 @@ export default function Header({ showSearch = false, searchPlaceholder, rightSlo
   useEffect(() => {
     setMenuOpen(false);
   }, [location.pathname]);
+
+  // Бейдж непрочитанной «предложки» (только для Мастера), живо обновляется.
+  const [unread, setUnread] = useState(0);
+  useEffect(() => {
+    if (!master) {
+      setUnread(0);
+      return undefined;
+    }
+    let cancelled = false;
+    const refresh = () => loadUnreadCount().then((n) => !cancelled && setUnread(n));
+    refresh();
+    window.addEventListener(SUGGESTIONS_EVENT, refresh);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(SUGGESTIONS_EVENT, refresh);
+    };
+  }, [master]);
 
   function goToRandomArticle() {
     const article = getRandomArticle(articles);
@@ -56,6 +74,7 @@ export default function Header({ showSearch = false, searchPlaceholder, rightSlo
           {master ? (
             <NavLink to="/editor" className="site-header__link">
               Редактор ⚜
+              {unread > 0 ? <span className="site-header__badge">{unread}</span> : null}
             </NavLink>
           ) : null}
           {master ? (

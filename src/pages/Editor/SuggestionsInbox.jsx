@@ -3,6 +3,7 @@ import {
   loadSuggestions,
   markSuggestionRead,
   deleteSuggestion,
+  notifySuggestionsChanged,
 } from '../../api/suggestions';
 
 /** Разбор предложений от игроков — вкладка Мастера. */
@@ -31,6 +32,7 @@ export default function SuggestionsInbox() {
 
   async function toggleRead(item) {
     setItems((prev) => prev.map((s) => (s.id === item.id ? { ...s, read: !s.read } : s)));
+    notifySuggestionsChanged();
     try {
       await markSuggestionRead(item.id, !item.read);
     } catch {
@@ -41,6 +43,7 @@ export default function SuggestionsInbox() {
   async function remove(id) {
     setItems((prev) => prev.filter((s) => s.id !== id));
     setConfirmId('');
+    notifySuggestionsChanged();
     try {
       await deleteSuggestion(id);
     } catch {

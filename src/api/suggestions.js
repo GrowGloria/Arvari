@@ -45,6 +45,22 @@ export async function loadSuggestions() {
   return request('/suggestions', { auth: true });
 }
 
+/** Событие «предложка изменилась» — чтобы бейдж в шапке обновлялся живьём. */
+export const SUGGESTIONS_EVENT = 'arvari-suggestions';
+export function notifySuggestionsChanged() {
+  window.dispatchEvent(new Event(SUGGESTIONS_EVENT));
+}
+
+/** Число непрочитанных (только Мастер). Без токена/при ошибке — 0. */
+export async function loadUnreadCount() {
+  try {
+    const list = await loadSuggestions();
+    return (list || []).filter((s) => !s.read).length;
+  } catch {
+    return 0;
+  }
+}
+
 export async function markSuggestionRead(id, read) {
   if (isMockMode) {
     writeLocal(
