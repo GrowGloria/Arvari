@@ -277,6 +277,19 @@ export function tokenizeInline(text) {
   return nodes;
 }
 
+/** Цели всех вики-ссылок [[…]] в тексте (без картинок ![[…]]), до символа |. */
+export function extractWikiTargets(src) {
+  if (!src) return [];
+  const out = [];
+  const re = /(!?)\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g;
+  let m;
+  while ((m = re.exec(src)) !== null) {
+    if (m[1] === '!') continue; // ![[…]] — это картинка, не ссылка
+    out.push(m[2].trim());
+  }
+  return out;
+}
+
 /** Убирает инлайн-разметку — для id заголовков и подписей оглавления. */
 export function stripInline(text) {
   return text

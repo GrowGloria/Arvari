@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import NotFound from '../NotFound/NotFound';
 import { coverStyle } from '../../lib/cover';
 import { buildToc } from '../../lib/toc';
-import { extractToc } from '../../lib/markdown';
+import { extractToc, extractWikiTargets } from '../../lib/markdown';
+import { slugify } from '../../lib/slug';
 import { formatNumber } from '../../lib/format';
 import { useIsMaster } from '../../lib/auth';
 import { getArticleBySlug, resolveRelated } from '../../data/articles';
@@ -34,6 +35,22 @@ export default function Article() {
       registerView(slug);
     }
   }, [article, slug, registerView]);
+
+  // Обратные ссылки: какие статьи ссылаются на эту через [[…]].
+  const backlinks = useMemo(() => {
+    if (!article) return [];
+    const slugMap = new Map();
+    for (const a of articles) {
+      slugMap.set(a.slug, a.slug);
+      slugMap.set(slugify(a.title), a.slug);
+    }
+    return articles.filter(
+      (a) =>
+        a.slug !== article.slug &&
+        a.markdown &&
+        extractWikiTargets(a.markdown).some((t) => slugMap.get(slugify(t)) === article.slug)
+    );
+  }, [articles, article]);
 
   // Пока свод грузится, статьи ещё нет — показывать 404 рано.
   if (!article && loading) return <ArticleLoading />;
@@ -232,6 +249,23 @@ export default function Article() {
                     <div>
                       <div className="related-card__title">{r.title}</div>
                       <div className="related-card__category">{r.category}</div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {backlinks.length > 0 && (
+            <div className="related-card">
+              <div className="related-card__label">Упоминается в</div>
+              <div className="related-card__list">
+                {backlinks.map((b) => (
+                  <Link to={`/article/${b.slug}`} className="related-card__item" key={b.slug}>
+                    <div className="related-card__thumb" style={coverStyle(b.cover)} />
+                    <div>
+                      <div className="related-card__title">{b.title}</div>
+                      <div className="related-card__category">{b.category}</div>
                     </div>
                   </Link>
                 ))}
