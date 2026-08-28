@@ -5,6 +5,7 @@ import Footer from '../../components/Footer';
 import ArticleEditor from './ArticleEditor';
 import NewsEditor from './NewsEditor';
 import ChronologyEditor from './ChronologyEditor';
+import JournalEditor from './JournalEditor';
 import SuggestionsInbox from './SuggestionsInbox';
 import { isMaster } from '../../lib/auth';
 import { login as apiLogin, logout as apiLogout } from '../../api/auth';
@@ -17,6 +18,7 @@ const TABS = [
   { key: 'article', label: 'Статья' },
   { key: 'news', label: 'Вестники' },
   { key: 'chronology', label: 'Хронология' },
+  { key: 'journal', label: 'Журнал' },
   { key: 'suggestions', label: 'Предложка' },
 ];
 
@@ -155,6 +157,7 @@ export default function Editor() {
           )}
           {tab === 'news' && <NewsEditor />}
           {tab === 'chronology' && <ChronologyEditor />}
+          {tab === 'journal' && <JournalEditor />}
           {tab === 'suggestions' && <SuggestionsInbox />}
         </main>
       )}

@@ -766,6 +766,13 @@
   color: var(--color-primary);
 }
 
+.editor-journal-body {
+  min-height: 160px;
+  resize: vertical;
+  font-family: var(--font-body);
+  line-height: 1.6;
+}
+
 .editor-actions__publish,
 .editor-actions__draft {
   font-family: var(--font-heading);

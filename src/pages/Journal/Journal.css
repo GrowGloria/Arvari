@@ -1,0 +1,151 @@
+.journal-main {
+  padding-top: 40px;
+  padding-bottom: 64px;
+  max-width: 860px;
+}
+
+/* ---- Шапка страницы ---- */
+.journal-hero {
+  text-align: center;
+  margin-bottom: 44px;
+}
+
+.journal-hero__kicker {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin-bottom: 10px;
+}
+
+.journal-hero__title {
+  font-family: var(--font-heading);
+  font-size: 40px;
+  line-height: 1.1;
+  color: var(--color-heading);
+  margin: 0 0 12px;
+}
+
+.journal-hero__subtitle {
+  max-width: 560px;
+  margin: 0 auto;
+  color: var(--color-text-secondary);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.journal-empty {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--color-text-muted);
+  font-size: 16px;
+}
+
+/* ---- Лента сессий ---- */
+.journal-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.journal-entry {
+  display: flex;
+  gap: 20px;
+  align-items: stretch;
+}
+
+/* Вертикальная нить времени с точкой у каждой записи. */
+.journal-entry__rail {
+  position: relative;
+  flex: 0 0 12px;
+  display: flex;
+  justify-content: center;
+}
+
+.journal-entry__rail::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-divider);
+}
+
+/* Первая и последняя точки не тянут нить за пределы ленты. */
+.journal-entry:first-child .journal-entry__rail::before {
+  top: 14px;
+}
+
+.journal-entry:last-child .journal-entry__rail::before {
+  bottom: calc(100% - 14px);
+}
+
+.journal-entry__dot {
+  position: relative;
+  z-index: 1;
+  width: 12px;
+  height: 12px;
+  margin-top: 8px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 0 0 4px var(--color-bg-page);
+}
+
+.journal-entry__body {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 28px;
+  padding: 22px 26px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.journal-entry__date {
+  display: inline-block;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin-bottom: 6px;
+}
+
+.journal-entry__title {
+  font-family: var(--font-heading);
+  font-size: 24px;
+  line-height: 1.2;
+  color: var(--color-heading);
+  margin: 0 0 10px;
+}
+
+.journal-entry__summary {
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  font-style: italic;
+  line-height: 1.6;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.journal-entry__text {
+  color: var(--color-prose);
+  line-height: 1.7;
+}
+
+@media (max-width: 720px) {
+  .journal-hero__title {
+    font-size: 30px;
+  }
+
+  .journal-entry {
+    gap: 12px;
+  }
+
+  .journal-entry__body {
+    padding: 18px 18px;
+  }
+}

@@ -2,6 +2,7 @@ import { isMockMode, readLocal, writeLocal, request } from './client';
 import { visitorId } from './analytics';
 import { NEWS as DEFAULT_NEWS } from '../data/home';
 import { EPOCHS as DEFAULT_EPOCHS } from '../data/chronology';
+import { JOURNAL as DEFAULT_JOURNAL } from '../data/journal';
 
 /**
  * Доступ к контенту свода: статьи, вестники, хронология.
@@ -14,6 +15,7 @@ import { EPOCHS as DEFAULT_EPOCHS } from '../data/chronology';
 const ARTICLES_KEY = 'arvari_articles';
 const NEWS_KEY = 'arvari_news';
 const CHRONO_KEY = 'arvari_chronology';
+const JOURNAL_KEY = 'arvari_journal';
 
 /* ---- Кэш свода в браузере (боевой режим) ----
  * Держит последнюю копию { articles, news, epochs } в localStorage, чтобы при
@@ -35,24 +37,24 @@ export function readContentCache() {
   }
 }
 
-function writeCache(at, articles, news, epochs) {
+function writeCache(at, articles, news, epochs, journal) {
   if (isMockMode) return;
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ at, articles, news, epochs }));
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ at, articles, news, epochs, journal }));
   } catch {
     /* переполнена квота — просто работаем без кэша */
   }
 }
 
 /** Записать свежую копию с сервера (сбрасывает TTL-таймер). */
-export function markCacheFresh({ articles, news, epochs }) {
-  writeCache(Date.now(), articles, news, epochs);
+export function markCacheFresh({ articles, news, epochs, journal }) {
+  writeCache(Date.now(), articles, news, epochs, journal);
 }
 
 /** Обновить данные кэша (правки Мастера), НЕ трогая TTL-таймер. */
-export function updateCacheData({ articles, news, epochs }) {
+export function updateCacheData({ articles, news, epochs, journal }) {
   const cur = readContentCache();
-  writeCache(cur?.at ?? Date.now(), articles, news, epochs);
+  writeCache(cur?.at ?? Date.now(), articles, news, epochs, journal);
 }
 
 /** Первичная загрузка свода. */
@@ -62,16 +64,18 @@ export async function loadContent() {
       articles: readLocal(ARTICLES_KEY, []),
       news: readLocal(NEWS_KEY, DEFAULT_NEWS),
       epochs: readLocal(CHRONO_KEY, DEFAULT_EPOCHS),
+      journal: readLocal(JOURNAL_KEY, DEFAULT_JOURNAL),
     };
   }
 
-  const [articles, news, epochs] = await Promise.all([
+  const [articles, news, epochs, journal] = await Promise.all([
     // auth:true — если Мастер вошёл, сервер добавит черновики; иначе только опубликованное.
     request('/articles', { auth: true }),
     request('/news'),
     request('/chronology'),
+    request('/journal'),
   ]);
-  return { articles, news, epochs };
+  return { articles, news, epochs, journal };
 }
 
 /** Перечитать только список статей (после входа/выхода Мастера — меняется видимость черновиков). */
@@ -162,4 +166,12 @@ export async function saveEpochs(list) {
     return list;
   }
   return request('/chronology', { method: 'PUT', body: list, auth: true });
+}
+
+export async function saveJournal(list) {
+  if (isMockMode) {
+    writeLocal(JOURNAL_KEY, list);
+    return list;
+  }
+  return request('/journal', { method: 'PUT', body: list, auth: true });
 }

@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { NEWS as DEFAULT_NEWS } from '../data/home';
 import { EPOCHS as DEFAULT_EPOCHS } from '../data/chronology';
+import { JOURNAL as DEFAULT_JOURNAL } from '../data/journal';
 import { AUTH_EVENT, isMaster } from '../lib/auth';
 import { logEvent } from '../api/analytics';
 import {
@@ -20,6 +21,7 @@ import {
   registerView as apiRegisterView,
   saveNews,
   saveEpochs,
+  saveJournal,
   readContentCache,
   markCacheFresh,
   updateCacheData,
@@ -40,6 +42,7 @@ const SAVE_DEBOUNCE_MS = 600;
 export function ContentProvider({ children }) {
   const [news, setNews] = useState(DEFAULT_NEWS);
   const [epochs, setEpochs] = useState(DEFAULT_EPOCHS);
+  const [journal, setJournal] = useState(DEFAULT_JOURNAL);
   const [articles, setArticles] = useState([]);
   const [hydrated, setHydrated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -55,6 +58,7 @@ export function ContentProvider({ children }) {
     if (cached) {
       setNews(cached.news ?? DEFAULT_NEWS);
       setEpochs(cached.epochs ?? DEFAULT_EPOCHS);
+      setJournal(cached.journal ?? DEFAULT_JOURNAL);
       setArticles(cached.articles);
       setLoading(false);
     }
@@ -76,6 +80,7 @@ export function ContentProvider({ children }) {
         if (cancelled) return;
         setNews(stored.news);
         setEpochs(stored.epochs);
+        setJournal(stored.journal ?? DEFAULT_JOURNAL);
         setArticles(stored.articles);
         markCacheFresh(stored);
         setError(null);
@@ -98,8 +103,8 @@ export function ContentProvider({ children }) {
   // Держим кэш в согласии с состоянием (правки Мастера, счётчик просмотров),
   // не сбрасывая TTL-таймер последней серверной загрузки.
   useEffect(() => {
-    if (hydrated) updateCacheData({ articles, news, epochs });
-  }, [articles, news, epochs, hydrated]);
+    if (hydrated) updateCacheData({ articles, news, epochs, journal });
+  }, [articles, news, epochs, journal, hydrated]);
 
   // Одно событие «визит» на загрузку приложения (для статистики посещаемости).
   useEffect(() => {
@@ -121,9 +126,11 @@ export function ContentProvider({ children }) {
   // пропускаем, чтобы не писать обратно только что прочитанное.
   useDebouncedSave(news, hydrated, saveNews, setSaveError);
   useDebouncedSave(epochs, hydrated, saveEpochs, setSaveError);
+  useDebouncedSave(journal, hydrated, saveJournal, setSaveError);
 
   const resetNews = useCallback(() => setNews(DEFAULT_NEWS), []);
   const resetEpochs = useCallback(() => setEpochs(DEFAULT_EPOCHS), []);
+  const resetJournal = useCallback(() => setJournal(DEFAULT_JOURNAL), []);
 
   /** Создаёт или (если передан editSlug) обновляет статью. Возвращает сохранённую. */
   const publishArticle = useCallback(async (article, editSlug = null) => {
@@ -166,6 +173,9 @@ export function ContentProvider({ children }) {
       epochs,
       setEpochs,
       resetEpochs,
+      journal,
+      setJournal,
+      resetJournal,
       articles,
       publishArticle,
       deleteArticle,
@@ -175,7 +185,7 @@ export function ContentProvider({ children }) {
       error,
       saveError,
     }),
-    [news, epochs, resetNews, resetEpochs, articles, publishArticle, deleteArticle, mergeArticle, registerView, loading, error, saveError]
+    [news, epochs, journal, resetNews, resetEpochs, resetJournal, articles, publishArticle, deleteArticle, mergeArticle, registerView, loading, error, saveError]
   );
 
   return <ContentContext.Provider value={value}>{children}</ContentContext.Provider>;

@@ -348,6 +348,8 @@ api.MapGet("/news", (AppDb db) => GetList(db, "news"));
 api.MapPut("/news", (HttpRequest req, AppDb db) => PutList(req, db, "news"));
 api.MapGet("/chronology", (AppDb db) => GetList(db, "chronology"));
 api.MapPut("/chronology", (HttpRequest req, AppDb db) => PutList(req, db, "chronology"));
+api.MapGet("/journal", (AppDb db) => GetList(db, "journal"));
+api.MapPut("/journal", (HttpRequest req, AppDb db) => PutList(req, db, "journal"));
 
 // ---- Предложка ----
 api.MapGet("/suggestions", async (HttpRequest req, AppDb db) =>

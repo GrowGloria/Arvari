@@ -71,6 +71,9 @@ export default function Header({ showSearch = false, searchPlaceholder, rightSlo
           <NavLink to="/chronology" className="site-header__link">
             Хронология
           </NavLink>
+          <NavLink to="/journal" className="site-header__link">
+            Журнал
+          </NavLink>
           {master ? (
             <NavLink to="/editor" className="site-header__link">
               Редактор ⚜
