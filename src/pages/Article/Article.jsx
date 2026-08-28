@@ -182,6 +182,18 @@ export default function Article() {
                 </div>
               ) : null}
 
+              {backlinks.length > 0 ? (
+                <div className="article-see-also article-backlinks">
+                  <span className="article-see-also__label">Упоминается в: </span>
+                  {backlinks.map((b, i) => (
+                    <span key={b.slug}>
+                      {i > 0 && ' · '}
+                      <Link to={`/article/${b.slug}`}>{b.title}</Link>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+
               {master ? (
                 <>
                   <div className="article-master-bar">
@@ -274,22 +286,6 @@ export default function Article() {
             </div>
           )}
 
-          {backlinks.length > 0 && (
-            <div className="related-card">
-              <div className="related-card__label">Упоминается в</div>
-              <div className="related-card__list">
-                {backlinks.map((b) => (
-                  <Link to={`/article/${b.slug}`} className="related-card__item" key={b.slug}>
-                    <div className="related-card__thumb" style={coverStyle(b.cover)} />
-                    <div>
-                      <div className="related-card__title">{b.title}</div>
-                      <div className="related-card__category">{b.category}</div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
         </aside>
       </main>
       </div>
