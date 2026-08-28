@@ -110,6 +110,23 @@ export async function removeArticle(slug) {
   await request(`/articles/${encodeURIComponent(slug)}`, { method: 'DELETE', auth: true });
 }
 
+/* ---- История правок (только Мастер) ---- */
+
+export async function loadRevisions(slug) {
+  if (isMockMode) return [];
+  return request(`/articles/${encodeURIComponent(slug)}/revisions`, { auth: true });
+}
+
+export async function loadRevision(slug, id) {
+  if (isMockMode) return null;
+  return request(`/articles/${encodeURIComponent(slug)}/revisions/${id}`, { auth: true });
+}
+
+export async function restoreRevision(slug, id) {
+  if (isMockMode) return null;
+  return request(`/articles/${encodeURIComponent(slug)}/restore/${id}`, { method: 'POST', auth: true });
+}
+
 /** Отметить просмотр статьи (+1 к счётчику). Возвращает { views }. */
 export async function registerView(slug) {
   if (isMockMode) {

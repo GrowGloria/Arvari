@@ -56,6 +56,9 @@ using (var scope = app.Services.CreateScope())
         "CREATE TABLE IF NOT EXISTS Events (Id INTEGER PRIMARY KEY AUTOINCREMENT, Type TEXT NOT NULL, Target TEXT, Visitor TEXT, CreatedAt TEXT NOT NULL)");
     db.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS IX_Events_CreatedAt ON Events (CreatedAt)");
     db.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS IX_Events_Type ON Events (Type)");
+    db.Database.ExecuteSqlRaw(
+        "CREATE TABLE IF NOT EXISTS Revisions (Id INTEGER PRIMARY KEY AUTOINCREMENT, Slug TEXT NOT NULL, Json TEXT NOT NULL, CreatedAt TEXT NOT NULL)");
+    db.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS IX_Revisions_Slug ON Revisions (Slug)");
     Seed.Chronology(db, app.Environment.ContentRootPath);
 }
 
@@ -149,7 +152,9 @@ api.MapPost("/articles", async (HttpRequest req, AppDb db) =>
     body["edits"] = 1;
     body["draft"] = ((bool?)body["draft"]) ?? false;
 
-    db.Articles.Add(new ArticleRow { Slug = slug, Json = body.ToJsonString() });
+    var json = body.ToJsonString();
+    db.Articles.Add(new ArticleRow { Slug = slug, Json = json });
+    await AddRevisionAsync(db, slug, json);
     await db.SaveChangesAsync();
     return Results.Json(body);
 });
@@ -171,8 +176,47 @@ api.MapPut("/articles/{slug}", async (string slug, HttpRequest req, AppDb db) =>
     body["draft"] = ((bool?)body["draft"]) ?? ((bool?)prev["draft"]) ?? false;
 
     row.Json = body.ToJsonString();
+    await AddRevisionAsync(db, slug, row.Json);
     await db.SaveChangesAsync();
     return Results.Json(body);
+});
+
+// ---- История правок (только Мастер) ----
+api.MapGet("/articles/{slug}/revisions", async (string slug, HttpRequest req, AppDb db) =>
+{
+    if (!auth.IsMaster(req)) return Deny();
+    var rows = await db.Revisions.Where(r => r.Slug == slug)
+        .OrderByDescending(r => r.Id).Take(50).ToListAsync();
+    return Results.Json(rows.Select(r => new { id = r.Id, createdAt = r.CreatedAt.ToString("o") }));
+});
+
+api.MapGet("/articles/{slug}/revisions/{id:int}", async (string slug, int id, HttpRequest req, AppDb db) =>
+{
+    if (!auth.IsMaster(req)) return Deny();
+    var rev = await db.Revisions.FirstOrDefaultAsync(r => r.Id == id && r.Slug == slug);
+    return rev is null ? Results.NotFound() : Results.Json(JsonNode.Parse(rev.Json));
+});
+
+api.MapPost("/articles/{slug}/restore/{id:int}", async (string slug, int id, HttpRequest req, AppDb db) =>
+{
+    if (!auth.IsMaster(req)) return Deny();
+    var article = await db.Articles.FindAsync(slug);
+    if (article is null) return Results.NotFound();
+    var rev = await db.Revisions.FirstOrDefaultAsync(r => r.Id == id && r.Slug == slug);
+    if (rev is null) return Results.NotFound();
+
+    var node = JsonNode.Parse(rev.Json)!.AsObject();
+    var prev = JsonNode.Parse(article.Json)!.AsObject();
+    node["slug"] = slug;
+    node["views"] = prev["views"]?.DeepClone() ?? 0; // просмотры не откатываем
+    node["date"] = prev["date"]?.DeepClone();
+    node["edits"] = ((int?)prev["edits"] ?? 1) + 1;
+
+    var json = node.ToJsonString();
+    article.Json = json;
+    await AddRevisionAsync(db, slug, json);
+    await db.SaveChangesAsync();
+    return Results.Json(node);
 });
 
 api.MapDelete("/articles/{slug}", async (string slug, HttpRequest req, AppDb db) =>
@@ -420,6 +464,15 @@ static object ToDto(SuggestionRow s) => new
 // Обрезает строку до max символов (и пустую превращает в null) — для лога.
 static string? Clip(string? s, int max) =>
     string.IsNullOrEmpty(s) ? null : (s.Length > max ? s[..max] : s);
+
+// Добавляет снимок статьи в историю, оставляя последние 50 версий на статью.
+static async Task AddRevisionAsync(AppDb db, string slug, string json)
+{
+    var extra = await db.Revisions.Where(r => r.Slug == slug)
+        .OrderByDescending(r => r.Id).Skip(49).ToListAsync();
+    if (extra.Count > 0) db.Revisions.RemoveRange(extra);
+    db.Revisions.Add(new RevisionRow { Slug = slug, Json = json });
+}
 
 // ---- OG-превью: сборка мета-тегов ----
 

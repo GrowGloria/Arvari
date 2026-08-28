@@ -9,6 +9,7 @@ import { extractToc, extractWikiTargets } from '../../lib/markdown';
 import { slugify } from '../../lib/slug';
 import { formatNumber } from '../../lib/format';
 import { useIsMaster } from '../../lib/auth';
+import { loadRevisions, loadRevision, restoreRevision } from '../../api/content';
 import { getArticleBySlug, resolveRelated } from '../../data/articles';
 import { CATEGORIES } from '../../data/categories';
 import { useContent } from '../../store/contentStore';
@@ -21,8 +22,9 @@ export default function Article() {
   const navigate = useNavigate();
   const master = useIsMaster();
   const { open } = useLightbox();
-  const { articles, deleteArticle, loading, registerView } = useContent();
+  const { articles, deleteArticle, mergeArticle, loading, registerView } = useContent();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [tocOpen, setTocOpen] = useState(true);
   const viewedRef = useRef(null);
   const article = getArticleBySlug(articles, slug);
@@ -181,33 +183,49 @@ export default function Article() {
               ) : null}
 
               {master ? (
-                <div className="article-master-bar">
-                  <span className="article-master-bar__label">⚜ Инструменты Мастера</span>
-                  <div className="article-master-bar__actions">
-                    <Link className="article-master-bar__edit" to={`/editor?edit=${article.slug}`}>
-                      ✎ Редактировать
-                    </Link>
-                    {confirmDelete ? (
-                      <span className="article-master-bar__confirm">
-                        Удалить статью?
-                        <button type="button" className="article-master-bar__yes" onClick={onDelete}>
-                          Да
-                        </button>
-                        <button type="button" onClick={() => setConfirmDelete(false)}>
-                          Нет
-                        </button>
-                      </span>
-                    ) : (
+                <>
+                  <div className="article-master-bar">
+                    <span className="article-master-bar__label">⚜ Инструменты Мастера</span>
+                    <div className="article-master-bar__actions">
+                      <Link className="article-master-bar__edit" to={`/editor?edit=${article.slug}`}>
+                        ✎ Редактировать
+                      </Link>
                       <button
                         type="button"
-                        className="article-master-bar__delete"
-                        onClick={() => setConfirmDelete(true)}
+                        className="article-master-bar__hist"
+                        onClick={() => setShowHistory((v) => !v)}
                       >
-                        ✕ Удалить
+                        🕓 История
                       </button>
-                    )}
+                      {confirmDelete ? (
+                        <span className="article-master-bar__confirm">
+                          Удалить статью?
+                          <button type="button" className="article-master-bar__yes" onClick={onDelete}>
+                            Да
+                          </button>
+                          <button type="button" onClick={() => setConfirmDelete(false)}>
+                            Нет
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="article-master-bar__delete"
+                          onClick={() => setConfirmDelete(true)}
+                        >
+                          ✕ Удалить
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
+                  {showHistory ? (
+                    <RevisionsPanel
+                      slug={article.slug}
+                      onClose={() => setShowHistory(false)}
+                      onRestore={mergeArticle}
+                    />
+                  ) : null}
+                </>
               ) : null}
             </div>
           </div>
@@ -318,4 +336,117 @@ function buildFallbackInfobox(article) {
     { label: 'Тип', value: article.category },
     article.tag && article.tag !== article.category ? { label: 'Метка', value: article.tag } : null,
   ].filter(Boolean);
+}
+
+function formatRevDate(iso) {
+  try {
+    return new Date(iso).toLocaleString('ru');
+  } catch {
+    return iso;
+  }
+}
+
+function RevisionsPanel({ slug, onClose, onRestore }) {
+  const [revs, setRevs] = useState(null);
+  const [error, setError] = useState('');
+  const [preview, setPreview] = useState(null);
+  const [confirmId, setConfirmId] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadRevisions(slug)
+      .then((r) => !cancelled && setRevs(r))
+      .catch((e) => !cancelled && setError(e.message || 'Не удалось загрузить историю.'));
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  async function show(id) {
+    setPreview({ id, article: null });
+    try {
+      const a = await loadRevision(slug, id);
+      setPreview({ id, article: a });
+    } catch (e) {
+      setError(e.message || 'Не удалось открыть версию.');
+      setPreview(null);
+    }
+  }
+
+  async function restore(id) {
+    setBusy(true);
+    try {
+      const saved = await restoreRevision(slug, id);
+      onRestore(saved);
+      onClose();
+    } catch (e) {
+      setError(e.message || 'Не удалось восстановить.');
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="revisions">
+      <div className="revisions__head">
+        <span>История правок</span>
+        <button type="button" onClick={onClose} aria-label="Закрыть">
+          ×
+        </button>
+      </div>
+      {error ? <div className="revisions__error">{error}</div> : null}
+      {!revs ? (
+        <div className="revisions__empty">Загрузка…</div>
+      ) : revs.length === 0 ? (
+        <div className="revisions__empty">Версий пока нет — история копится с этого момента.</div>
+      ) : (
+        <div className="revisions__list">
+          {revs.map((r, i) => (
+            <div className="revisions__row" key={r.id}>
+              <span className="revisions__date">
+                {formatRevDate(r.createdAt)}
+                {i === 0 ? ' · текущая' : ''}
+              </span>
+              <span className="revisions__actions">
+                <button type="button" onClick={() => show(r.id)}>
+                  Показать
+                </button>
+                {confirmId === r.id ? (
+                  <>
+                    <button type="button" className="revisions__yes" disabled={busy} onClick={() => restore(r.id)}>
+                      Точно восстановить?
+                    </button>
+                    <button type="button" onClick={() => setConfirmId(null)}>
+                      Отмена
+                    </button>
+                  </>
+                ) : (
+                  <button type="button" disabled={i === 0} onClick={() => setConfirmId(r.id)}>
+                    Восстановить
+                  </button>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {preview ? (
+        <div className="revisions__preview">
+          <div className="revisions__preview-head">
+            <span>Просмотр версии{preview.article ? ` — ${preview.article.title}` : ''}</span>
+            <button type="button" onClick={() => setPreview(null)}>
+              Скрыть
+            </button>
+          </div>
+          {preview.article ? (
+            <div className="revisions__preview-body">
+              <Markdown source={preview.article.markdown || ''} />
+            </div>
+          ) : (
+            <div className="revisions__empty">Загрузка…</div>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
 }

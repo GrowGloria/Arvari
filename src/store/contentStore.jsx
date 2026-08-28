@@ -140,6 +140,11 @@ export function ContentProvider({ children }) {
     setArticles((prev) => prev.filter((a) => a.slug !== slug));
   }, []);
 
+  /** Заменить статью в состоянии (после восстановления версии из истории). */
+  const mergeArticle = useCallback((saved) => {
+    setArticles((prev) => prev.map((a) => (a.slug === saved.slug ? saved : a)));
+  }, []);
+
   /** Отметить просмотр статьи. Просмотры Мастера не считаем. */
   const registerView = useCallback(async (slug) => {
     if (isMaster()) return;
@@ -164,12 +169,13 @@ export function ContentProvider({ children }) {
       articles,
       publishArticle,
       deleteArticle,
+      mergeArticle,
       registerView,
       loading,
       error,
       saveError,
     }),
-    [news, epochs, resetNews, resetEpochs, articles, publishArticle, deleteArticle, registerView, loading, error, saveError]
+    [news, epochs, resetNews, resetEpochs, articles, publishArticle, deleteArticle, mergeArticle, registerView, loading, error, saveError]
   );
 
   return <ContentContext.Provider value={value}>{children}</ContentContext.Provider>;

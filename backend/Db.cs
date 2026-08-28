@@ -13,6 +13,7 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
     public DbSet<KvRow> Kv => Set<KvRow>();
     public DbSet<SuggestionRow> Suggestions => Set<SuggestionRow>();
     public DbSet<EventRow> Events => Set<EventRow>();
+    public DbSet<RevisionRow> Revisions => Set<RevisionRow>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -20,6 +21,7 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
         b.Entity<KvRow>().HasKey(k => k.Key);
         b.Entity<SuggestionRow>().HasKey(s => s.Id);
         b.Entity<EventRow>().HasKey(e => e.Id);
+        b.Entity<RevisionRow>().HasKey(r => r.Id);
     }
 }
 
@@ -60,5 +62,17 @@ public class EventRow
     public string Type { get; set; } = "";
     public string? Target { get; set; }
     public string? Visitor { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Снимок статьи на момент сохранения — для истории правок. Полный JSON статьи.
+/// Таблица создаётся вручную в Program (EnsureCreated не трогает старую базу).
+/// </summary>
+public class RevisionRow
+{
+    public int Id { get; set; }
+    public string Slug { get; set; } = "";
+    public string Json { get; set; } = "";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
