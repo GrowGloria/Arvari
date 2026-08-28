@@ -737,6 +737,35 @@
   cursor: pointer;
 }
 
+.editor-templates {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.editor-templates__label {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.editor-templates__btn {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  padding: 7px 14px;
+  cursor: pointer;
+  color: var(--color-text-secondary-2);
+}
+
+.editor-templates__btn:hover {
+  border-color: var(--color-border-accent);
+  color: var(--color-primary);
+}
+
 .editor-actions__publish,
 .editor-actions__draft {
   font-family: var(--font-heading);

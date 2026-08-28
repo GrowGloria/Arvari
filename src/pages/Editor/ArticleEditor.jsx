@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { coverStyle } from '../../lib/cover';
 import { uploadUrl } from '../../lib/assets';
 import { CATEGORIES } from '../../data/categories';
+import { ARTICLE_TEMPLATES } from '../../data/templates';
 import { articleFromDraft } from '../../data/articles';
 import { useContent } from '../../store/contentStore';
 import { draftFromObsidian } from '../../lib/obsidianImport';
@@ -212,6 +213,18 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
     setFacts((prev) => [...prev, { label: '', value: '' }]);
   }
 
+  // Заполняет тело и поля инфобокса по шаблону (для новых статей).
+  function applyTemplate(t) {
+    if (body.trim() && !window.confirm('Заменить текущий текст и поля инфобокса шаблоном?')) return;
+    setBody(t.body);
+    setFacts(t.facts.map((f) => ({ ...f })));
+    if (t.category) {
+      setCategory(t.category);
+      setSubcategory('');
+    }
+    markDirty();
+  }
+
   // Применяет форматирование к выделению в textarea тела статьи.
   function applyFormat(btn) {
     if (btn.snippet) {
@@ -395,6 +408,22 @@ export default function ArticleEditor({ initial = null, editSlug = null }) {
               Загружено: <strong>{imported.name}</strong>
               {imported.category ? ` · раздел «${imported.category}» по тегам` : ' · раздел не определён по тегам — выберите вручную'}
               {imported.cover ? ` · обложка: ${imported.cover}` : ''}
+            </div>
+          ) : null}
+
+          {!editing ? (
+            <div className="editor-templates">
+              <span className="editor-templates__label">Шаблон:</span>
+              {ARTICLE_TEMPLATES.map((t) => (
+                <button
+                  type="button"
+                  key={t.key}
+                  className="editor-templates__btn"
+                  onClick={() => applyTemplate(t)}
+                >
+                  {t.label}
+                </button>
+              ))}
             </div>
           ) : null}
 
