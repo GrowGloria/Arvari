@@ -108,6 +108,20 @@ export function parseMarkdown(src) {
       continue;
     }
 
+    // Таблица (GFM): строка с | и следующая строка-разделитель из дефисов.
+    if (line.includes('|') && i + 1 < lines.length && isTableSep(lines[i + 1])) {
+      const header = splitTableRow(line);
+      const align = splitTableRow(lines[i + 1]).map(cellAlign);
+      i += 2;
+      const rows = [];
+      while (i < lines.length && lines[i].trim() && lines[i].includes('|')) {
+        rows.push(splitTableRow(lines[i]));
+        i += 1;
+      }
+      blocks.push({ type: 'table', header, align, rows });
+      continue;
+    }
+
     // Абзац: подряд идущие строки до пустой/спец-строки, переносы = <br>.
     const para = [];
     while (i < lines.length) {
@@ -166,6 +180,33 @@ function parseList(listLines) {
 function isOrdered(line) {
   const m = line && line.match(LIST_ITEM_RE);
   return m ? /\d/.test(m[2]) : false;
+}
+
+/* ---- Таблицы (GFM pipe tables) ---- */
+
+// Строка-разделитель: только | : - и пробелы, есть и труба, и дефис.
+function isTableSep(line) {
+  const s = line.trim();
+  return s.includes('|') && s.includes('-') && /^[\s:|-]+$/.test(s);
+}
+
+// Разбивает строку таблицы на ячейки (крайние трубы необязательны).
+function splitTableRow(line) {
+  let s = line.trim();
+  if (s.startsWith('|')) s = s.slice(1);
+  if (s.endsWith('|')) s = s.slice(0, -1);
+  return s.split('|').map((c) => c.trim());
+}
+
+// Выравнивание ячейки по маркерам двоеточий в разделителе.
+function cellAlign(cell) {
+  const c = (cell || '').trim();
+  const left = c.startsWith(':');
+  const right = c.endsWith(':');
+  if (left && right) return 'center';
+  if (right) return 'right';
+  if (left) return 'left';
+  return null;
 }
 
 /** Пункты оглавления (h2/h3) для сайдбара статьи. */

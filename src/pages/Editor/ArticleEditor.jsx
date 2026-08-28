@@ -21,6 +21,11 @@ const TOOLBAR = [
   { label: 'Цитата', title: 'Цитата', line: '> ' },
   { label: 'Список', title: 'Пункт списка', line: '- ' },
   { label: '─', title: 'Горизонтальная линия (разделитель)', snippet: '\n\n---\n\n' },
+  {
+    label: 'Табл.',
+    title: 'Таблица',
+    snippet: '\n\n| Заголовок 1 | Заголовок 2 |\n| --- | --- |\n| Ячейка | Ячейка |\n\n',
+  },
 ];
 
 const ARCHIVE_IMAGES = [

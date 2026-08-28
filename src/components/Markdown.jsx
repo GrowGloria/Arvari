@@ -53,6 +53,8 @@ function renderBlock(block, key, ctx) {
       return <Fragment key={key}>{renderTokens(tokenizeInline(block.text), ctx)}</Fragment>;
     case 'list':
       return renderList(block, key, ctx);
+    case 'table':
+      return renderTable(block, key, ctx);
     case 'paragraph':
     default:
       return <p key={key}>{renderLines(block.lines || [], ctx)}</p>;
@@ -79,6 +81,36 @@ function renderList(list, key, ctx) {
         </li>
       ))}
     </Tag>
+  );
+}
+
+function renderTable(table, key, ctx) {
+  const cols = table.header.length;
+  return (
+    <div className="md__table-wrap" key={key}>
+      <table className="md__table">
+        <thead>
+          <tr>
+            {table.header.map((cell, i) => (
+              <th key={i} style={table.align[i] ? { textAlign: table.align[i] } : undefined}>
+                {renderTokens(tokenizeInline(cell), ctx)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {table.rows.map((row, r) => (
+            <tr key={r}>
+              {Array.from({ length: cols }, (_, c) => (
+                <td key={c} style={table.align[c] ? { textAlign: table.align[c] } : undefined}>
+                  {renderTokens(tokenizeInline(row[c] || ''), ctx)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
